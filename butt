@@ -1,0 +1,180 @@
+#!/bin/bash
+
+#shopt -s nocasematch
+shopt -s extglob
+set -u
+
+# shellcheck disable=SC2086
+: ${BUTT_DATAPATH:=.}
+# shellcheck disable=SC2086
+: ${BUTT_OPTIONS:=}
+: ${COLUMNS:=$(tput cols)}
+: ${LINES:=$(tput lines)}
+
+function main {
+
+  function msg_start {
+    if stdoutpipe || [[ $COLUMNS -lt 41 ]]; then
+      echo "$1" && return 0
+    fi
+    echo -n "[ "
+    save_cursor_position
+    echo " ....  ] $1"
+  }
+
+  function msg_end {
+    if stdoutpipe || [[ $COLUMNS -lt 41 ]]; then
+      echo "[ $1 ]" && return 0
+    fi
+    set_cursor_position
+    echo "$1"
+  }
+
+  function stdout_silent {
+    [[ $verbose == 0 ]] && exec 5<&1 && exec 1>/dev/null
+    return 0
+  }
+
+  function stdout_verbose {
+    [[ $verbose == 0 ]] && exec 1<&5
+    return 0
+  }
+
+  function err {
+    echo "$(basename "${0}")[error]: $*" >&2
+    return 1
+  }
+
+  function setcolor {
+    local c
+    c=${1:-always}
+    case $c in
+      always|never|auto)
+        color=$c
+        return 0
+      ;;
+    esac
+    return 2
+  }
+
+  function stdoutpipe {
+    readlink /proc/$$/fd/1 | grep -q "^pipe:"
+  }
+
+  function colorize {
+    [[ $color == never ]] && echo -n "$1" && return
+    [[ $color == auto ]] && stdoutpipe && echo -n "$1" && return
+    local c
+    c="${2:-$GREEN}"
+    tput setaf "$c"
+    echo -n "$1"
+    tput sgr0
+  }
+
+  function clear_stdin {
+    while read -r -t 0; do read -r; done
+  }
+
+  function save_cursor_position {
+    local curpos
+    curpos="1;1"
+    echo -en "\033[6n" >/dev/tty
+    # shellcheck disable=SC2162
+    read -d"R" curpos </dev/tty
+    pos_x=$( echo "${curpos#??}" | cut -d";" -f1 )
+    pos_y=$( echo "${curpos#??}" | cut -d";" -f2 )
+  }
+
+  function set_cursor_position {
+    [[ "$pos_x" == "$LINES" ]] && : $(( pos_x-- ))
+    tput cup $(( pos_x-1 )) $(( pos_y-1 ))
+  }
+
+  function confirm {
+    if [[ $is_stdin == 0 ]]; then
+      stdout_verbose
+      echo -n "${1:-"Are you sure?"} [YES/No] "
+      save_cursor_position
+      clear_stdin
+      read -r
+      [[ -z "$REPLY" ]] && set_cursor_position && echo "yes"
+      stdout_silent
+    else
+      read -r
+    fi
+    [[ "$REPLY" =~ ^y(es)?$ || -z "$REPLY" ]] && return 0
+    [[ "$REPLY" =~ ^no?$ ]] && return 1
+    confirm "Type"
+  }
+
+  function usage {
+    local usage_file shift_left
+    usage_file="$BUTT_DATAPATH/${script_name}.usage"
+    [ -f "$usage_file" ] \
+      || err "Usage file not found" \
+      || return 1
+    head -n1 "$usage_file"
+    echo
+    shift_left=0
+    # shellcheck disable=SC2004
+    [[ $COLUMNS -gt 1 ]] && shift_left=5 && export MANWIDTH=$((COLUMNS+$shift_left))
+    # shellcheck disable=SC2005
+    echo "$(tail -n+2 "$usage_file")" | man --nj --nh -l - | sed "1,2d;/^[[:space:]]*$/d;\$d;s/^ \{$shift_left\}//"
+  }
+
+  function version {
+    local ver
+    ver="$BUTT_DATAPATH/VERSION"
+    [ -f "$ver" ] \
+      || err "Version file not found" \
+      || return 1
+    echo -n "GNU gf "
+    cat "$ver"
+  }
+
+  local line script_name pos_x pos_y is_stdin
+
+  script_name="butt"
+  pos_x=1
+  pos_y=1
+  [ -t 0 ]
+  is_stdin=$?
+
+  # process options
+  # shellcheck disable=SC2086
+  # shellcheck disable=SC2048
+  if ! line=$(
+    IFS=" " getopt -n "$0" \
+           -o hvV\? \
+           -l help,verbose,version \
+           -- $BUTT_OPTIONS $*
+  )
+  then usage; return 2; fi
+  eval set -- "$line"
+
+  # load user options
+  verbose=0
+  while [ $# -gt 0 ]; do
+    case $1 in
+     -v|--verbose) verbose=1; shift ;;
+     -V|--version) version; return $? ;;
+      --) shift; break ;;
+      *-) err "Unrecognized option '$1'"; usage; return 2 ;;
+       *) break ;;
+    esac
+  done
+
+  # constants
+  local -r \
+    RED=1 \
+    GREEN=2 \
+    BLUE=4
+  # shellcheck disable=SC2034
+  local -r \
+    DONE="$(colorize "  ok  " $GREEN)" \
+    FAILED="$(colorize "failed" $RED)" \
+    SKIPPED="$(colorize "skipped" $BLUE)"
+
+}
+
+main "$@"
