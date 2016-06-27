@@ -136,9 +136,30 @@ function main {
     local status
     status="${1-}"
     # shellcheck disable=SC2015
-    [ $status -eq 0 ] \
+    [ "$status" -eq 0 ] \
       && msg_end "$DONE" \
       || msg_end "$FAILED"
+  }
+
+  function status {
+    msg_start "${FUNCNAME[1]}"
+    msg_end_status "$1"
+    if [[ ! $1 -eq 0 ]]; then
+      : $((failed++))
+    fi
+    return "$1"
+  }
+  function assert_equal {
+    [[ "$1" == "$2" ]]
+    status $?
+  }
+  function assert_startwith {
+    [[ "$1" == "$2"* ]]
+    status $?
+  }
+  function assert_contains {
+    echo "$1" | grep -q "$2"
+    status $?
   }
 
   function eval_cmd {
@@ -146,12 +167,30 @@ function main {
     cmd="${2-}"
     case "$1" in
       test) test_header "$2";;
-      start|before|run|eval|after|end) eval "$cmd";;
+      run|before|after)
+        local stdoutfile stderrfile
+        stdoutfile="$(mktemp)"
+        stderrfile="$(mktemp)"
+        eval "$cmd" > "$stdoutfile" 2>"$stderrfile"
+        status=$?\
+        stdout="$(< "$stdoutfile")"
+        stderr="$(< "$stderrfile")"
+        if [[ "$1" == "before" || "$1" == "after" ]]; then
+          [[ -n "$stdout" ]] && echo "$stdout"
+          # shellcheck disable=SC2005
+          [[ -n "$stderr" ]] && echo "$(colorize "$stderr" "$RED")"
+        fi
+        IFS=$'\n' read -d '' -r -a outlines <<< "$stdout"
+        IFS=$'\n' read -d '' -r -a errlines <<< "$stderr"
+        ;;
+      start|eval|end) eval "$cmd";;
     esac
   }
 
   function test_header {
-    echo "Test '$1'"
+    stdout_verbose
+    echo "# test '$1'"
+    stdout_silent
   }
 
   function validate {
@@ -179,7 +218,7 @@ function main {
     linen=0
     state_changed=0
     last_linen=$(< "$1" wc -l)
-    while read -r line; do
+    while IFS= read -r line; do
       : $((linen++))
       [[ -z "$line" ]] && continue
 
@@ -200,6 +239,7 @@ function main {
         input="$input$line"
       fi
 
+      # state changed or it last line
       if [[ $state_changed -eq 1 ]] || [[ $linen -eq $last_linen ]]; then
         eval_cmd "$prev_state" "$input"
         input=
@@ -208,12 +248,15 @@ function main {
     done < "$1"
   }
 
-  local line script_name pos_x pos_y is_stdin
+  local line script_name pos_x pos_y is_stdin status failed
+  # shellcheck disable=SC2034
+  local stdout stderr outlines errlines
 
   script_name="butt"
   color=auto
   pos_x=1
   pos_y=1
+  failed=0
   [ -t 0 ]
   is_stdin=$?
 
