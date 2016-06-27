@@ -1,0 +1,55 @@
+
+#cmd
+tmp="$(mktemp -d)"
+cd "$tmp"
+
+function take {
+  echo $1
+}
+
+#######################
+#test
+example of butt test
+#cmd
+take "call local function"
+echo a > a
+echo "before test" \
+  && echo "before test 2" \
+  && echo "some err" >&2
+#run
+echo "run"
+#cmd
+assert_equal $status 0
+assert_equal $stdout run
+#run
+echo "a run2" | cut -d" " -f1
+#cmd
+assert_equal $status 0
+assert_equal $stdout run
+
+echo after test
+echo after test2
+
+echo after test3
+######################
+
+######################
+#test
+another test
+- return 1
+#run
+echo run2
+######################
+
+######################
+#test
+test wrong status code
+#run
+gf
+#cmd
+assert_equal $status 3
+######################
+
+
+#cmd
+rm -rf "$tmp"
