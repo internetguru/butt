@@ -145,7 +145,7 @@ function main {
     msg_start "${FUNCNAME[1]}"
     msg_end_status "$1"
     if [[ ! $1 -eq 0 ]]; then
-      : $((failed++))
+      : $((local_fails++))
     fi
     return "$1"
   }
@@ -166,8 +166,10 @@ function main {
     local cmd
     cmd="${2-}"
     case "$1" in
-      test) test_header "$2";;
-      run|before|after)
+      test)
+        : $((tests++))
+        test_header "$2";;
+      run)
         local stdoutfile stderrfile
         stdoutfile="$(mktemp)"
         stderrfile="$(mktemp)"
@@ -183,7 +185,7 @@ function main {
         IFS=$'\n' read -d '' -r -a outlines <<< "$stdout"
         IFS=$'\n' read -d '' -r -a errlines <<< "$stderr"
         ;;
-      start|eval|end) eval "$cmd";;
+      cmd) eval "$cmd";;
     esac
   }
 
@@ -225,7 +227,7 @@ function main {
       # set state
       state_changed=0
       case "$line" in
-        \#test*|\#start*|\#before*|\#run*|\#eval*|\#after*|\#end*)
+        \#test*|\#cmd*|\#run*)
           prev_state="$state"
           state="$(echo "$line" | cut -d" " -f1)"
           state="${state#\#}"
@@ -245,10 +247,33 @@ function main {
         input=
       fi
 
+      # end of test
+      if [[ "$state_changed" -eq 1 && "$state" == "test" && "$prev_state" != "start" && "$prev_state" != "" ]] || [[ $linen -eq $last_linen ]]; then
+        stdout_verbose
+        # if [[ $local_fails -eq 0 ]]; then
+        #   echo "$DONE"
+        # else
+        #   : $((test_fails++))
+        #   echo "$FAILED"
+        # fi
+        if [[ ! $local_fails -eq 0 ]]; then
+          : $((test_fails++))
+        fi
+        local_fails=0
+        stdout_silent
+      fi
+
+      # last line
+      if [[ $linen -eq $last_linen ]]; then
+        stdout_verbose
+        echo "$tests tests, $test_fails failures"
+        stdout_silent
+      fi
+
     done < "$1"
   }
 
-  local line script_name pos_x pos_y is_stdin status failed
+  local line script_name pos_x pos_y is_stdin status tests local_fails test_fails
   # shellcheck disable=SC2034
   local stdout stderr outlines errlines
 
@@ -256,7 +281,9 @@ function main {
   color=auto
   pos_x=1
   pos_y=1
-  failed=0
+  tests=0
+  test_fails=0
+  local_fails=0
   [ -t 0 ]
   is_stdin=$?
 
