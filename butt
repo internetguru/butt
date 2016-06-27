@@ -135,6 +135,7 @@ function main {
   local line script_name pos_x pos_y is_stdin
 
   script_name="butt"
+  color=auto
   pos_x=1
   pos_y=1
   [ -t 0 ]
@@ -145,8 +146,8 @@ function main {
   # shellcheck disable=SC2048
   if ! line=$(
     IFS=" " getopt -n "$0" \
-           -o hvV\? \
-           -l help,verbose,version \
+           -o chvV\? \
+           -l color::,colour::,help,verbose,version \
            -- $BUTT_OPTIONS $*
   )
   then usage; return 2; fi
@@ -156,13 +157,19 @@ function main {
   verbose=0
   while [ $# -gt 0 ]; do
     case $1 in
-     -v|--verbose) verbose=1; shift ;;
-     -V|--version) version; return $? ;;
+      --color|--colour) shift; setcolor "$1" || { usage; return 2; }; shift ;;
+      -h|-\?|--help) usage; return $? ;;
+      -v|--verbose) verbose=1; shift ;;
+      -V|--version) version; return $? ;;
       --) shift; break ;;
       *-) err "Unrecognized option '$1'"; usage; return 2 ;;
-       *) break ;;
+      *) break ;;
     esac
   done
+
+  [ ${#@} -eq 1 ] \
+    || err "Invalid number of arguments" \
+    || { usage; return 2; }
 
   # constants
   local -r \
