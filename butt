@@ -132,6 +132,82 @@ function main {
     cat "$ver"
   }
 
+  function msg_end_status {
+    local status
+    status="${1-}"
+    # shellcheck disable=SC2015
+    [ $status -eq 0 ] \
+      && msg_end "$DONE" \
+      || msg_end "$FAILED"
+  }
+
+  function eval_cmd {
+    local cmd
+    cmd="${2-}"
+    case "$1" in
+      test) test_header "$2";;
+      start|before|run|eval|after|end) eval "$cmd";;
+    esac
+  }
+
+  function test_header {
+    echo "Test '$1'"
+  }
+
+  function validate {
+    [ ${#@} -eq 1 ] \
+      || err "Invalid number of arguments" \
+      || { usage; return 2; }
+    [ -f "$1" ] \
+      || err "File '$1' not found" \
+      || return 1
+  }
+
+  ##
+  # start
+  # test
+  # before
+  # run
+  # eval
+  # after
+  # end
+  function process {
+    local state prev_state input state_changed linen
+    state=
+    prev_state=
+    input=
+    linen=0
+    state_changed=0
+    last_linen=$(< "$1" wc -l)
+    while read -r line; do
+      : $((linen++))
+      [[ -z "$line" ]] && continue
+
+      # set state
+      state_changed=0
+      case "$line" in
+        \#test*|\#start*|\#before*|\#run*|\#eval*|\#after*|\#end*)
+          prev_state="$state"
+          state="$(echo "$line" | cut -d" " -f1)"
+          state="${state#\#}"
+          state_changed=1
+          ;;
+      esac
+
+      # process input
+      if [[ $state_changed -eq 0 ]] || [[ $linen -eq $last_linen ]]; then
+        [[ -n "$input" ]] && line=$'\n'"$line"
+        input="$input$line"
+      fi
+
+      if [[ $state_changed -eq 1 ]] || [[ $linen -eq $last_linen ]]; then
+        eval_cmd "$prev_state" "$input"
+        input=
+      fi
+
+    done < "$1"
+  }
+
   local line script_name pos_x pos_y is_stdin
 
   script_name="butt"
@@ -167,9 +243,8 @@ function main {
     esac
   done
 
-  [ ${#@} -eq 1 ] \
-    || err "Invalid number of arguments" \
-    || { usage; return 2; }
+  # silent if not verbose
+  [ $verbose -eq 0 ] && stdout_silent
 
   # constants
   local -r \
@@ -181,6 +256,14 @@ function main {
     DONE="$(colorize "  ok  " $GREEN)" \
     FAILED="$(colorize "failed" $RED)" \
     SKIPPED="$(colorize "skipped" $BLUE)"
+
+  # run butt
+  # shellcheck disable=SC2015
+  validate "$@" && process "$@" || {
+    case $? in
+      1) err "Generic error occurred."; return 1 ;;
+    esac
+  }
 
 }
 
