@@ -234,6 +234,7 @@ function main {
     echo "---------"
     echo "$tests tests, $test_fails failures"
     stdout_silent
+    [[ $test_fails -eq 0 ]] || return 1
   }
 
   local line script_name pos_x pos_y is_stdin status tests local_fails test_fails working_dir working_file clean curdir
@@ -307,11 +308,7 @@ function main {
 
   # run butt
   # shellcheck disable=SC2015
-  validate "$@" && process "$@" && summary || {
-    case $? in
-      1) err "Generic error occurred."; return 1 ;;
-    esac
-  }
+  validate "$@" && process "$@" && summary || return $?
 
 }
 
