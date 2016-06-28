@@ -13,21 +13,34 @@ set -u
 
 function main {
 
+  function validate_nubmer {
+    [[ $1 =~ ^[1-9][0-9]*$ ]] \
+      || err "'$1' is not a valid positive number"
+  }
+
   function msg_start {
+    stdout_verbose
     if stdoutpipe || [[ $COLUMNS -lt 41 ]]; then
-      echo "$1" && return 0
+      echo "$1"
+      stdout_silent
+      return 0
     fi
     echo -n "[ "
     save_cursor_position
     echo " ....  ] $1"
+    stdout_silent
   }
 
   function msg_end {
+    stdout_verbose
     if stdoutpipe || [[ $COLUMNS -lt 41 ]]; then
-      echo "[ $1 ]" && return 0
+      echo "[ $1 ]"
+      stdout_silent
+      return 0
     fi
     set_cursor_position
     echo "$1"
+    stdout_silent
   }
 
   function stdout_silent {
@@ -128,7 +141,7 @@ function main {
     [ -f "$ver" ] \
       || err "Version file not found" \
       || return 1
-    echo -n "GNU gf "
+    echo -n "GNU butt "
     cat "$ver"
   }
 
@@ -203,28 +216,28 @@ function main {
   }
 
   function butt {
+    [[ "$limit" -gt 0 && "$((test_runs+1))" -gt "$limit" ]] && return 3 # end testing
     : $((tests++))
     local_fails=0
-    stdout_verbose
-    if [[ "$verbose" -eq 1 ]]; then
-      echo "# Test '$@'"
-    else
-      msg_start "$@"
-    fi
-    stdout_silent
+    [[ "$verbose" -eq 0 ]] && msg_start "$@"
+    [[ "$skip" -gt 0 && "$((tests-1))" -lt "$skip" ]] \
+      && { [[ "$verbose" -eq 1 ]] || msg_end "$SKIPPED"; } \
+      && return 4 # skip test
+    : $((test_runs++))
+    [[ "$verbose" -eq 0 ]] || { echo; echo "# Test '$@'"; }
   }
 
   function ttub {
-    [[ "$verbose" -eq 1 ]] && return
     [[ "$local_fails" -eq 0 ]] || : $((test_fails++))
-    stdout_verbose
+    [[ "$verbose" -eq 1 ]] && return
     msg_end_status "$local_fails"
-    stdout_silent
   }
 
   function process {
-    echo "trap 'err \"$1 failed on line \$((\$LINENO-1))\"; return 1' ERR" > "$working_file"
+    echo "trap 'case $? in; 3) return 0;; 4) : ;; *) err \"$1 failed on line \$((\$LINENO-1))\"; return 1;; esac' ERR" > "$working_file"
     cat "$curdir/$1" >> "$working_file"
+    sed -i 's/^\s*butt \(.*\)$/if butt \1; then/g' "$working_file"
+    sed -i 's/ttub/ttub; fi/g' "$working_file"
     source "$working_file"
     trap - ERR
   }
@@ -232,12 +245,12 @@ function main {
   function summary {
     stdout_verbose
     echo "---------"
-    echo "$tests tests, $test_fails failures"
+    echo "$test_runs tests, $test_fails failures"
     stdout_silent
     [[ $test_fails -eq 0 ]] || return 1
   }
 
-  local line script_name pos_x pos_y is_stdin status tests local_fails test_fails working_dir working_file clean curdir
+  local line script_name pos_x pos_y is_stdin status tests local_fails test_fails test_runs working_dir working_file clean curdir limit skip
   # shellcheck disable=SC2034
   local stdout stderr outlines errlines
 
@@ -247,6 +260,7 @@ function main {
   pos_y=1
   tests=0
   test_fails=0
+  test_runs=0
   local_fails=0
   curdir="$(dirname $(readlink -f $0))"
   [ -t 0 ]
@@ -257,8 +271,8 @@ function main {
   # shellcheck disable=SC2048
   if ! line=$(
     IFS=" " getopt -n "$0" \
-           -o c::hvVw:\? \
-           -l color::,colour::,help,verbose,version,working-dir: \
+           -o c::hl:s:vVw:\? \
+           -l color::,colour::,help,limit:,skip:,verbose,version,working-dir: \
            -- $BUTT_OPTIONS $*
   )
   then usage; return 2; fi
@@ -269,10 +283,14 @@ function main {
   verbose=0
   working_dir=
   clean=1
+  limit=0
+  skip=0
   while [ $# -gt 0 ]; do
     case $1 in
       --color|--colour) shift; setcolor "$1" || { usage; return 2; }; shift ;;
       -h|-\?|--help) usage; return $? ;;
+      -l|--limit) shift; validate_nubmer "$1" || return 1; limit="$1"; shift;;
+      -s|--skip) shift; validate_nubmer "$1" || return 1; skip="$1"; shift;;
       -v|--verbose) verbose=1; shift ;;
       -V|--version) version; return $? ;;
       -w|--working-dir) shift; working_dir="$1"; clean=0; shift ;;
@@ -287,7 +305,9 @@ function main {
 
   # working dir is random tmp iff not set
   [[ -z "$working_dir" ]] && working_dir="$(mktemp -d)"
-  cd "$working_dir"
+  cd "$working_dir" 2>/dev/null \
+    || err "Unable to change directory to '$working_dir'" \
+    || return 1
 
   # modified test file
   working_file="$(mktemp)"
@@ -303,8 +323,8 @@ function main {
   # shellcheck disable=SC2034
   local -r \
     DONE="$(colorize "  ok  " $GREEN)" \
-    FAILED="$(colorize "failed" $RED)" \
-    SKIPPED="$(colorize "skipped" $BLUE)"
+    FAILED="$(colorize " fail " $RED)" \
+    SKIPPED="$(colorize " skip " $BLUE)"
 
   # run butt
   # shellcheck disable=SC2015
