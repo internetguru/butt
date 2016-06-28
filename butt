@@ -27,7 +27,7 @@ function main {
     fi
     echo -n "[ "
     save_cursor_position
-    echo " ....  ] $1"
+    echo ".... ] $1"
     stdout_silent
   }
 
@@ -322,9 +322,9 @@ function main {
     BLUE=4
   # shellcheck disable=SC2034
   local -r \
-    DONE="$(colorize "  ok  " $GREEN)" \
-    FAILED="$(colorize " fail " $RED)" \
-    SKIPPED="$(colorize " skip " $BLUE)"
+    DONE="$(colorize " ok " $GREEN)" \
+    FAILED="$(colorize "fail" $RED)" \
+    SKIPPED="$(colorize "skip" $BLUE)"
 
   # run butt
   # shellcheck disable=SC2015
