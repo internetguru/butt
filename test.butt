@@ -1,55 +1,60 @@
-
-#cmd
-tmp="$(mktemp -d)"
-cd "$tmp"
-
-function take {
-  echo $1
+# define user functions
+function before {
+  echo "before test"
+}
+function after {
+  echo "after test"
 }
 
-#######################
-#test
-example of butt test
-#cmd
-take "call local function"
-echo a > a
-echo "before test" \
-  && echo "before test 2" \
-  && echo "some err" >&2
-#run
-echo "run"
-#cmd
-assert_equal $status 0
-assert_equal $stdout run
-#run
-echo "a run2" | cut -d" " -f1
-#cmd
-assert_equal $status 0
-assert_equal $stdout run
+# start test
+butt "Example of complex butt test"
 
-echo after test
-echo after test2
+  # call user function
+  before
 
-echo after test3
-######################
+  # some code before test
+  echo "some code" \
+    && echo "another code"
 
-######################
-#test
-another test
-- return 1
-#run
-echo run2
-######################
+  # debug testing command
+  debug echo -e "test$'\n'test1"
 
-######################
-#test
-test wrong status code
-#run
-gf
-#cmd
-assert_equal $status 3
-######################
+  # assert command output
+  assert_equal $status 0
+  assert_equal "${outlines[0]}" test
+  assert_equal "${outlines[1]}" test1
 
+  # debug another testing command
+  debug 'echo "aaa bbb" | cut -d" " -f2 >&2'
 
-#cmd
-rm -rf "$tmp"
+  # assert command output
+  assert_equal $status 0
+  assert_equal $stderr bbb
+
+  # debug another testing command (another way)
+  out="$(echo "aaa bbb" | cut -d" " -f2)"
+
+  assert_equal $? 0
+  assert_equal $out bbb
+
+  # call user function
+  after
+
+# end test
+ttub
+
+butt "Example of simple test"
+  before
+  debug echo "test"
+  assert_equal $status 0
+  assert_equal "$stdout" test
+  after
+ttub
+
+butt "Example of failing test"
+  before
+  debug echo "test"
+  assert_equal $status 0
+  assert_equal "$stdout" fail
+  after
+ttub

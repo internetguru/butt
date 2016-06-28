@@ -141,139 +141,102 @@ function main {
       || msg_end "$FAILED"
   }
 
-  function status {
-    msg_start "${FUNCNAME[1]}"
-    msg_end_status "$1"
-    if [[ ! $1 -eq 0 ]]; then
-      : $((local_fails++))
-    fi
-    return "$1"
-  }
-  function assert_equal {
-    [[ "$1" == "$2" ]]
-    status $?
-  }
-  function assert_startwith {
-    [[ "$1" == "$2"* ]]
-    status $?
-  }
-  function assert_contains {
-    echo "$1" | grep -q "$2"
-    status $?
-  }
-
-  function eval_cmd {
-    local cmd
-    cmd="${2-}"
-    case "$1" in
-      test)
-        : $((tests++))
-        test_header "$2";;
-      run)
-        local stdoutfile stderrfile
-        stdoutfile="$(mktemp)"
-        stderrfile="$(mktemp)"
-        eval "$cmd" > "$stdoutfile" 2>"$stderrfile"
-        status=$?\
-        stdout="$(< "$stdoutfile")"
-        stderr="$(< "$stderrfile")"
-        if [[ "$1" == "before" || "$1" == "after" ]]; then
-          [[ -n "$stdout" ]] && echo "$stdout"
-          # shellcheck disable=SC2005
-          [[ -n "$stderr" ]] && echo "$(colorize "$stderr" "$RED")"
-        fi
-        IFS=$'\n' read -d '' -r -a outlines <<< "$stdout"
-        IFS=$'\n' read -d '' -r -a errlines <<< "$stderr"
-        ;;
-      cmd) eval "$cmd";;
-    esac
-  }
-
-  function test_header {
-    stdout_verbose
-    echo "# test '$1'"
-    stdout_silent
-  }
-
   function validate {
     [ ${#@} -eq 1 ] \
       || err "Invalid number of arguments" \
       || { usage; return 2; }
-    [ -f "$1" ] \
-      || err "File '$1' not found" \
+    [ -f "$curdir/$1" ] \
+      || err "File '$curdir/$1' not found" \
       || return 1
   }
 
-  ##
-  # start
-  # test
-  # before
-  # run
-  # eval
-  # after
-  # end
-  function process {
-    local state prev_state input state_changed linen
-    state=
-    prev_state=
-    input=
-    linen=0
-    state_changed=0
-    last_linen=$(< "$1" wc -l)
-    while IFS= read -r line; do
-      : $((linen++))
-      [[ -z "$line" ]] && continue
-
-      # set state
-      state_changed=0
-      case "$line" in
-        \#test*|\#cmd*|\#run*)
-          prev_state="$state"
-          state="$(echo "$line" | cut -d" " -f1)"
-          state="${state#\#}"
-          state_changed=1
-          ;;
-      esac
-
-      # process input
-      if [[ $state_changed -eq 0 ]] || [[ $linen -eq $last_linen ]]; then
-        [[ -n "$input" ]] && line=$'\n'"$line"
-        input="$input$line"
-      fi
-
-      # state changed or it last line
-      if [[ $state_changed -eq 1 ]] || [[ $linen -eq $last_linen ]]; then
-        eval_cmd "$prev_state" "$input"
-        input=
-      fi
-
-      # end of test
-      if [[ "$state_changed" -eq 1 && "$state" == "test" && "$prev_state" != "start" && "$prev_state" != "" ]] || [[ $linen -eq $last_linen ]]; then
-        stdout_verbose
-        # if [[ $local_fails -eq 0 ]]; then
-        #   echo "$DONE"
-        # else
-        #   : $((test_fails++))
-        #   echo "$FAILED"
-        # fi
-        if [[ ! $local_fails -eq 0 ]]; then
-          : $((test_fails++))
-        fi
-        local_fails=0
-        stdout_silent
-      fi
-
-      # last line
-      if [[ $linen -eq $last_linen ]]; then
-        stdout_verbose
-        echo "$tests tests, $test_fails failures"
-        stdout_silent
-      fi
-
-    done < "$1"
+  function status {
+    [[ "$verbose" -eq 1 ]] \
+      && msg_start "${FUNCNAME[1]}" \
+      && msg_end_status "$1"
+    [[ $1 -eq 0 ]] || : $((local_fails++))
   }
 
-  local line script_name pos_x pos_y is_stdin status tests local_fails test_fails
+  function assert_arg_check {
+    [[ -n "${1-}" && -n "${2-}" ]] \
+      || err "${FUNCNAME[1]}: invalid number of arguments"
+  }
+
+  function assert_equal {
+    assert_arg_check "$@" || exit 1
+    [[ "$1" == "$2" ]]
+    status $?
+  }
+
+  function assert_startwith {
+    assert_arg_check "$@" || exit 1
+    [[ "$1" == "$2"* ]]
+    status $?
+  }
+
+  function assert_contains {
+    assert_arg_check "$@" || exit 1
+    echo "$1" | grep -q "$2"
+    status $?
+  }
+
+  function debug {
+    local cmd
+    cmd="${@-}"
+    local stdoutfile stderrfile
+    stdoutfile="$(mktemp)"
+    stderrfile="$(mktemp)"
+    eval "$cmd" > "$stdoutfile" 2>"$stderrfile"
+    status=$?\
+    stdout="$(< "$stdoutfile")"
+    stderr="$(< "$stderrfile")"
+    if [[ "$1" == "before" || "$1" == "after" ]]; then
+      [[ -n "$stdout" ]] && echo "$stdout"
+      # shellcheck disable=SC2005
+      [[ -n "$stderr" ]] && echo "$(colorize "$stderr" "$RED")"
+    fi
+    outlines=()
+    errlines=()
+    [[ -z "$stdout" ]] || IFS=$'\n' read -d '' -r -a outlines <<< "$stdout"
+    [[ -z "$stderr" ]] || IFS=$'\n' read -d '' -r -a errlines <<< "$stderr"
+    return 0
+  }
+
+  function butt {
+    : $((tests++))
+    local_fails=0
+    stdout_verbose
+    if [[ "$verbose" -eq 1 ]]; then
+      echo "# Test '$@'"
+    else
+      msg_start "$@"
+    fi
+    stdout_silent
+  }
+
+  function ttub {
+    [[ "$verbose" -eq 1 ]] && return
+    [[ "$local_fails" -eq 0 ]] || : $((test_fails++))
+    stdout_verbose
+    msg_end_status "$local_fails"
+    stdout_silent
+  }
+
+  function process {
+    echo "trap 'err \"$1 failed on line \$((\$LINENO-1))\"; return 1' ERR" > "$working_file"
+    cat "$curdir/$1" >> "$working_file"
+    source "$working_file"
+    trap - ERR
+  }
+
+  function summary {
+    stdout_verbose
+    echo "---------"
+    echo "$tests tests, $test_fails failures"
+    stdout_silent
+  }
+
+  local line script_name pos_x pos_y is_stdin status tests local_fails test_fails working_dir working_file clean curdir
   # shellcheck disable=SC2034
   local stdout stderr outlines errlines
 
@@ -284,6 +247,7 @@ function main {
   tests=0
   test_fails=0
   local_fails=0
+  curdir="$(dirname $(readlink -f $0))"
   [ -t 0 ]
   is_stdin=$?
 
@@ -292,21 +256,25 @@ function main {
   # shellcheck disable=SC2048
   if ! line=$(
     IFS=" " getopt -n "$0" \
-           -o chvV\? \
-           -l color::,colour::,help,verbose,version \
+           -o c::hvVw:\? \
+           -l color::,colour::,help,verbose,version,working-dir: \
            -- $BUTT_OPTIONS $*
   )
   then usage; return 2; fi
   eval set -- "$line"
 
   # load user options
+  # TODO: add working directory (default tmp)
   verbose=0
+  working_dir=
+  clean=1
   while [ $# -gt 0 ]; do
     case $1 in
       --color|--colour) shift; setcolor "$1" || { usage; return 2; }; shift ;;
       -h|-\?|--help) usage; return $? ;;
       -v|--verbose) verbose=1; shift ;;
       -V|--version) version; return $? ;;
+      -w|--working-dir) shift; working_dir="$1"; clean=0; shift ;;
       --) shift; break ;;
       *-) err "Unrecognized option '$1'"; usage; return 2 ;;
       *) break ;;
@@ -315,6 +283,16 @@ function main {
 
   # silent if not verbose
   [ $verbose -eq 0 ] && stdout_silent
+
+  # working dir is random tmp iff not set
+  [[ -z "$working_dir" ]] && working_dir="$(mktemp -d)"
+  cd "$working_dir"
+
+  # modified test file
+  working_file="$(mktemp)"
+
+  # cleanup iff terminate or exit
+  trap "[[ \"$clean\" -eq 1 ]] && rm -rf \"$working_dir\"; rm \"$working_file\";" INT TERM EXIT
 
   # constants
   local -r \
@@ -329,7 +307,7 @@ function main {
 
   # run butt
   # shellcheck disable=SC2015
-  validate "$@" && process "$@" || {
+  validate "$@" && process "$@" && summary || {
     case $? in
       1) err "Generic error occurred."; return 1 ;;
     esac
