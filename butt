@@ -234,7 +234,7 @@ function main {
   }
 
   function process {
-    echo "trap 'case $? in; 3) return 0;; 4) : ;; *) err \"$1 failed on line \$((\$LINENO-1))\"; return 1;; esac' ERR" > "$working_file"
+    echo "trap 'case $? in 3) return 0;; 4) : ;; *) err \"$1 failed on line \$((\$LINENO-1))\"; return 1;; esac' ERR" > "$working_file"
     cat "$curdir/$1" >> "$working_file"
     sed -i 's/^\s*butt \(.*\)$/if butt \1; then/g' "$working_file"
     sed -i 's/ttub/ttub; fi/g' "$working_file"
