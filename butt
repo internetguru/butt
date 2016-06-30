@@ -195,7 +195,7 @@ function main {
 
   function debug {
     local cmd
-    cmd="${@-}"
+    cmd="${*-}"
     local stdoutfile stderrfile
     stdoutfile="$(mktemp)"
     stderrfile="$(mktemp)"
@@ -224,7 +224,7 @@ function main {
       && { [[ "$verbose" -eq 1 ]] || msg_end "$SKIPPED"; } \
       && return 4 # skip test
     : $((test_runs++))
-    [[ "$verbose" -eq 0 ]] || { echo; echo "# Test '$@'"; }
+    [[ "$verbose" -eq 0 ]] || { echo; echo "# Test '$*'"; }
   }
 
   function ttub {
@@ -238,6 +238,7 @@ function main {
     cat "$curdir/$1" >> "$working_file"
     sed -i 's/^\s*butt \(.*\)$/if butt \1; then/g' "$working_file"
     sed -i 's/ttub/ttub; fi/g' "$working_file"
+    # shellcheck source=/dev/null
     source "$working_file"
     trap - ERR
   }
@@ -262,7 +263,7 @@ function main {
   test_fails=0
   test_runs=0
   local_fails=0
-  curdir="$(dirname $(readlink -f $0))"
+  curdir="$(dirname "$(readlink -f "$0")")"
   [ -t 0 ]
   is_stdin=$?
 
@@ -313,6 +314,7 @@ function main {
   working_file="$(mktemp)"
 
   # cleanup iff terminate or exit
+  # shellcheck disable=SC2064
   trap "[[ \"$clean\" -eq 1 ]] && rm -rf \"$working_dir\"; rm \"$working_file\";" INT TERM EXIT
 
   # constants
