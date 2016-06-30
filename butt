@@ -238,7 +238,7 @@ function main {
     cat "$curdir/$1" >> "$working_file"
     sed -i 's/^\s*butt \(.*\)$/if butt \1; then/g' "$working_file"
     sed -i 's/ttub/ttub; fi/g' "$working_file"
-    # shellcheck source=/dev/null
+    # shellcheck disable=SC1090
     source "$working_file"
     trap - ERR
   }
