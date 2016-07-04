@@ -20,6 +20,7 @@ SYSTEM       ?= $(system)
 DIRNAME     := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 RST2MAN     := rst2man.py
 PROG        := butt
+DATAPATHVAR := BUTT_DATAPATH
 README      := README
 MANFILE     := $(PROG).1
 USAGEFILE   := $(PROG).usage
@@ -51,7 +52,7 @@ all:
 	@ echo -n "Compiling command file ..."
 	@ { \
 	head -n1 $(PROG); \
-	echo "PROG_DATAPATH=\"$(SHAREPATH)/$(PROG)\""; \
+	echo "$(DATAPATHVAR)=\"$(SHAREPATH)/$(PROG)\""; \
 	tail -n+2 $(PROG); \
 	} > $(DISTNAME)/$(PROG)
 	@ chmod +x $(DISTNAME)/$(PROG)
