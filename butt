@@ -269,7 +269,7 @@ function main {
   test_fails=0
   test_runs=0
   local_fails=0
-  curdir="$(dirname "$(readlink -f "$0")")"
+  curdir="$(pwd)"
   [ -t 0 ]
   is_stdin=$?
 
