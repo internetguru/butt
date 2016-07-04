@@ -6,7 +6,7 @@ Bash Unit Testing Tool
 SYNOPSIS
 ========
 
-butt [-chlsvVw] [--color[=WHEN]] FILE
+butt [-hlsvVw] [--color[=WHEN]] FILE
 
 DESCRIPTION
 ===========

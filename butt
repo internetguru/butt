@@ -278,7 +278,7 @@ function main {
   # shellcheck disable=SC2048
   if ! line=$(
     IFS=" " getopt -n "$0" \
-           -o c::hl:s:vVw:\? \
+           -o hl:s:vVw:\? \
            -l color::,colour::,help,limit:,skip:,verbose,version,working-dir: \
            -- $BUTT_OPTIONS $*
   )
