@@ -7,7 +7,7 @@ function after {
 }
 
 # start test
-butt "Example of complex butt test"
+start "Example of complex butt test"
 
   # call user function
   before
@@ -41,20 +41,20 @@ butt "Example of complex butt test"
   after
 
 # end test
-ttub
+end
 
-butt "Example of simple test"
+start "Example of simple test"
   before
   debug echo "test"
   assert_equal $status 0
   assert_equal "$stdout" test
   after
-ttub
+end
 
-butt "Example of failing test"
+start "Example of failing test"
   before
   debug echo "test"
   assert_equal $status 0
   assert_equal "$stdout" fail
   after
-ttub
+end

@@ -195,7 +195,7 @@ function main {
 
   function debug {
     local cmd
-    cmd="${@-}"
+    cmd="${*-}"
     local stdoutfile stderrfile
     stdoutfile="$(mktemp)"
     stderrfile="$(mktemp)"
@@ -210,24 +210,30 @@ function main {
     fi
     outlines=()
     errlines=()
+    # shellcheck disable=SC2034
     [[ -z "$stdout" ]] || IFS=$'\n' read -d '' -r -a outlines <<< "$stdout"
+    # shellcheck disable=SC2034
     [[ -z "$stderr" ]] || IFS=$'\n' read -d '' -r -a errlines <<< "$stderr"
     return 0
   }
 
-  function butt {
+  # shellcheck disable=SC1083
+  function start {
+    # shellcheck disable=SC2154
     [[ "$limit" -gt 0 && "$((test_runs+1))" -gt "$limit" ]] && return 3 # end testing
     : $((tests++))
     local_fails=0
     [[ "$verbose" -eq 0 ]] && msg_start "$@"
+    # shellcheck disable=SC2154
     [[ "$skip" -gt 0 && "$((tests-1))" -lt "$skip" ]] \
       && { [[ "$verbose" -eq 1 ]] || msg_end "$SKIPPED"; } \
       && return 4 # skip test
     : $((test_runs++))
-    [[ "$verbose" -eq 0 ]] || { echo; echo "# Test '$@'"; }
+    [[ "$verbose" -eq 0 ]] || { echo; echo "# Test '$*'"; }
   }
 
-  function ttub {
+  # shellcheck disable=SC1083
+  function end {
     [[ "$local_fails" -eq 0 ]] || : $((test_fails++))
     [[ "$verbose" -eq 1 ]] && return
     msg_end_status "$local_fails"
@@ -238,6 +244,7 @@ function main {
     cat "$curdir/$1" >> "$working_file"
     sed -i 's/^\s*butt \(.*\)$/if butt \1; then/g' "$working_file"
     sed -i 's/ttub/ttub; fi/g' "$working_file"
+    # shellcheck disable=SC1090
     source "$working_file"
     trap - ERR
   }
@@ -262,7 +269,7 @@ function main {
   test_fails=0
   test_runs=0
   local_fails=0
-  curdir="$(dirname $(readlink -f $0))"
+  curdir="$(pwd)"
   [ -t 0 ]
   is_stdin=$?
 
@@ -271,7 +278,7 @@ function main {
   # shellcheck disable=SC2048
   if ! line=$(
     IFS=" " getopt -n "$0" \
-           -o c::hl:s:vVw:\? \
+           -o hl:s:vVw:\? \
            -l color::,colour::,help,limit:,skip:,verbose,version,working-dir: \
            -- $BUTT_OPTIONS $*
   )
@@ -313,6 +320,7 @@ function main {
   working_file="$(mktemp)"
 
   # cleanup iff terminate or exit
+  # shellcheck disable=SC2064
   trap "[[ \"$clean\" -eq 1 ]] && rm -rf \"$working_dir\"; rm \"$working_file\";" INT TERM EXIT
 
   # constants
