@@ -11,12 +11,17 @@ butt [-hlsvVw] [--color[=WHEN]] FILE
 DESCRIPTION
 ===========
 
-**Bash Unit Testing Tool**\ [1] (hereinafter referred as the 'BUTT') TODO
+**Bash Unit Testing Tool**\ [1] (hereinafter referred as the 'BUTT') runs and
+evaluates a set of commands according to expected results. It can serve as CI
+component of Bash scrip development.
 
 It is an alternative to **bats**\ [2] command with following
 improvements:
 
-- TODO
+- predefined comparison (assert) functions,
+- distinguish standard and error output,
+- verbose mode,
+- advanced user functions support.
 
 OPTIONS
 =======
@@ -34,8 +39,8 @@ OPTIONS
     Verbose mode.
 \-V, --version
     Print version number.
-\-w, --working-dir
-    TODO
+\-w PATH, --working-dir=PATH
+    Run tests in specific PATH (and do not remove it).
 
 INSTALL
 =======
@@ -82,7 +87,7 @@ EXIT STATUS
 SEE ALSO
 ========
 
-`BUTT on GitHub[1] <https://github.com/InternetGuru/butt/>`__
+`BUTT[1] <https://github.com/InternetGuru/butt/>`__
 
 `Bats[2] <https://github.com/sstephenson/bats>`__
 
@@ -114,12 +119,11 @@ cover our infrastructure expenses.
 If you’d like to make a donation of any value, please send it to the following
 PayPal address:
 
-TODO butt donation
-`PayPal Donation <https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=G6A49JPWQKG7A>`__
+`PayPal Donation <https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=UZHQ28P4VYHWY>`__
 
 Since we aren’t a tax-exempt organization, we can’t offer you a tax deduction.
 But for all donations over 50 USD, we’d be happy to recognize your
-contribution on the **OMGF** page[1] and on this README file (including manual
+contribution on the **BUTT** page[1] and on this README file (including manual
 page) for the next release.
 
 We are also happy to consider making particular improvements or changes, or
