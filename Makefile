@@ -75,7 +75,7 @@ all:
 
 	@ echo -n "Compiling usage file ..."
 	@ echo -n "$(USAGEHEADER)" > $(DISTNAME)/$(USAGEFILE)
-	@ grep "^gf \[" $(README).rst | sed 's/\\|/|/g' >> $(DISTNAME)/$(USAGEFILE)
+	@ grep "^$(PROG) \[" $(README).rst | sed 's/\\|/|/g' >> $(DISTNAME)/$(USAGEFILE)
 	@ echo ".TH" >> $(DISTNAME)/$(USAGEFILE)
 	@ sed -n '/^OPTIONS/,/^INSTALL/p' $(README).rst  | grep -v "^\(INSTALL\|OPTIONS\|======\)" \
 	| sed 's/^\\/-/;s/^-/.TP 18\n-/' | sed 's/^    //' | sed '/^$$/d' >> $(DISTNAME)/$(USAGEFILE)

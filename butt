@@ -20,26 +20,13 @@ function main {
 
   function msg_start {
     stdout_verbose
-    if stdoutpipe || [[ $COLUMNS -lt 41 ]]; then
-      echo "$1"
-      stdout_silent
-      return 0
-    fi
-    echo -n "[ "
-    save_cursor_position
-    echo ".... ] $1"
+    echo -n "$1 ..."
     stdout_silent
   }
 
   function msg_end {
     stdout_verbose
-    if stdoutpipe || [[ $COLUMNS -lt 41 ]]; then
-      echo "[ $1 ]"
-      stdout_silent
-      return 0
-    fi
-    set_cursor_position
-    echo "$1"
+    echo -e " $1"
     stdout_silent
   }
 
@@ -91,9 +78,9 @@ function main {
   function save_cursor_position {
     local curpos
     curpos="1;1"
-    echo -en "\033[6n" >/dev/tty
+    echo -en "\033[6n" >"$(tty)"
     # shellcheck disable=SC2162
-    read -d"R" curpos </dev/tty
+    read -d"R" curpos <"$(tty)"
     pos_x=$( echo "${curpos#??}" | cut -d";" -f1 )
     pos_y=$( echo "${curpos#??}" | cut -d";" -f2 )
   }
@@ -170,26 +157,26 @@ function main {
     [[ $1 -eq 0 ]] || : $((local_fails++))
   }
 
-  function assert_arg_check {
-    [[ -n "${1-}" && -n "${2-}" ]] \
-      || err "${FUNCNAME[1]}: invalid number of arguments"
-  }
+  # function assert_arg_check {
+  #   [[ -n "${1-}" && -n "${2-}" ]] \
+  #     || err "${FUNCNAME[1]}: invalid number of arguments"
+  # }
 
   function assert_equal {
-    assert_arg_check "$@" || exit 1
-    [[ "$1" == "$2" ]]
+    # assert_arg_check "$@" || exit 1
+    [[ "${1-}" == "${2-}" ]]
     status $?
   }
 
   function assert_startwith {
-    assert_arg_check "$@" || exit 1
-    [[ "$1" == "$2"* ]]
+    # assert_arg_check "$@" || exit 1
+    [[ "${1-}" == "${2-}"* ]]
     status $?
   }
 
   function assert_contains {
-    assert_arg_check "$@" || exit 1
-    echo "$1" | grep -q "$2"
+    # assert_arg_check "$@" || exit 1
+    echo "${1-}" | grep -q "${2-}"
     status $?
   }
 
@@ -223,13 +210,14 @@ function main {
     [[ "$limit" -gt 0 && "$((test_runs+1))" -gt "$limit" ]] && return 3 # end testing
     : $((tests++))
     local_fails=0
+    # shellcheck disable=SC2015
     [[ "$verbose" -eq 0 ]] && msg_start "$@"
     # shellcheck disable=SC2154
     [[ "$skip" -gt 0 && "$((tests-1))" -lt "$skip" ]] \
       && { [[ "$verbose" -eq 1 ]] || msg_end "$SKIPPED"; } \
       && return 4 # skip test
     : $((test_runs++))
-    [[ "$verbose" -eq 0 ]] || { echo; echo "# Test '$*'"; }
+    [[ "$verbose" -eq 0 ]] || { echo; echo "#$tests Test '$*'"; }
   }
 
   # shellcheck disable=SC1083
@@ -240,10 +228,10 @@ function main {
   }
 
   function process {
-    echo "trap 'case $? in 3) return 0;; 4) : ;; *) err \"$1 failed on line \$((\$LINENO-1))\"; return 1;; esac' ERR" > "$working_file"
+    echo "trap 'case \$? in 3) return 0;; 4) : ;; *) err \"$1 failed on line \$((\$LINENO-1))\"; return 1;; esac' ERR" > "$working_file"
     cat "$curdir/$1" >> "$working_file"
-    sed -i 's/^\s*butt \(.*\)$/if butt \1; then/g' "$working_file"
-    sed -i 's/ttub/ttub; fi/g' "$working_file"
+    sed -i 's/^\s*start \(.*\)$/if start \1; then/g' "$working_file"
+    sed -i 's/end/end; fi/g' "$working_file"
     # shellcheck disable=SC1090
     source "$working_file"
     trap - ERR
@@ -286,7 +274,6 @@ function main {
   eval set -- "$line"
 
   # load user options
-  # TODO: add working directory (default tmp)
   verbose=0
   working_dir=
   clean=1
@@ -321,7 +308,7 @@ function main {
 
   # cleanup iff terminate or exit
   # shellcheck disable=SC2064
-  trap "[[ \"$clean\" -eq 1 ]] && rm -rf \"$working_dir\"; rm \"$working_file\";" INT TERM EXIT
+  trap "[[ \"$clean\" -eq 1 ]] && rm -rf \"$working_dir\"; rm \"$working_file\"; exit;" INT TERM EXIT
 
   # constants
   local -r \
@@ -330,7 +317,7 @@ function main {
     BLUE=4
   # shellcheck disable=SC2034
   local -r \
-    DONE="$(colorize " ok " $GREEN)" \
+    DONE="$(colorize "ok" $GREEN)" \
     FAILED="$(colorize "fail" $RED)" \
     SKIPPED="$(colorize "skip" $BLUE)"
 
