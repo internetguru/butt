@@ -2,10 +2,10 @@
 
 # define user functions
 function before {
-  echo "before test"
+  :
 }
 function after {
-  echo "after test"
+  :
 }
 
 # start test
@@ -15,8 +15,6 @@ start "Example of complex butt test"
   before
 
   # some custom code before test
-  echo "some code" \
-    && echo "another code"
 
   # debug tested command
   debug echo -e "test$'\n'test1"

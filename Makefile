@@ -26,6 +26,7 @@ MANFILE     := $(PROG).1
 USAGEFILE   := $(PROG).usage
 VERFILE     := VERSION
 CHLOGFILE   := CHANGELOG
+TAPDIR      := tap
 DESTPATH    := $(DESTDIR)$(PREFIX)
 BINPATH     := $(DESTDIR)$(EXEC_PREFIX)/bin
 SHAREPATH   := $(DESTPATH)/share
@@ -95,7 +96,7 @@ all:
 	echo "&& mkdir -p \"\$$BINPATH\" \\"; \
 	echo "&& cp \"\$$dir/$(PROG)\" \"\$$BINPATH\" \\"; \
 	echo "&& mkdir -p \"\$$SHAREPATH/$(PROG)\" \\"; \
-	echo "&& cp \"\$$dir/$(USAGEFILE)\" \"\$$dir/$(VERFILE)\" \"\$$SHAREPATH/$(PROG)\" \\"; \
+	echo "&& cp -r \"$(TAPDIR)\" \"\$$dir/$(USAGEFILE)\" \"\$$dir/$(VERFILE)\" \"\$$SHAREPATH/$(PROG)\" \\"; \
 	echo "&& echo 'Installation completed.' \\"; \
 	echo "|| { echo 'Installation failed.'; exit 1; }"; \
 	} > $(DISTNAME)/$(INSTFILE)

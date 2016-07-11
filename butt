@@ -156,33 +156,26 @@ function main {
   }
 
   function status {
-    [[ "$verbose" -eq 1 ]] \
-      && msg_start "${FUNCNAME[1]}" \
-      && msg_end_status "$1"
+    [[ "$verbose" -eq 1 && ! $1 -eq 0 ]] \
+      && diag "${FUNCNAME[1]}" \
+      && diag "  saw: $2" \
+      && diag "  not: $3"
     [[ $1 -eq 0 ]] || : $((local_fails++))
   }
 
-  # function assert_arg_check {
-  #   [[ -n "${1-}" && -n "${2-}" ]] \
-  #     || err "${FUNCNAME[1]}: invalid number of arguments"
-  # }
-
   function assert_equal {
-    # assert_arg_check "$@" || exit 1
     [[ "${1-}" == "${2-}" ]]
-    status $?
+    status $? "${1-}" "${2-}"
   }
 
   function assert_startwith {
-    # assert_arg_check "$@" || exit 1
     [[ "${1-}" == "${2-}"* ]]
-    status $?
+    status $? "${1-}" "${2-}"
   }
 
   function assert_contains {
-    # assert_arg_check "$@" || exit 1
     echo "${1-}" | grep -q "${2-}"
-    status $?
+    status $? "${1-}" "${2-}"
   }
 
   function debug {
@@ -211,46 +204,41 @@ function main {
 
   # shellcheck disable=SC1083
   function start {
+    name="$*"
+    local_fails=0
     # shellcheck disable=SC2154
     [[ "$limit" -gt 0 && "$((test_runs+1))" -gt "$limit" ]] && return 3 # end testing
     : $((tests++))
-    local_fails=0
-    # shellcheck disable=SC2015
-    [[ "$verbose" -eq 0 ]] && msg_start "$@"
-    # shellcheck disable=SC2154
     [[ "$skip" -gt 0 && "$((tests-1))" -lt "$skip" ]] \
-      && { [[ "$verbose" -eq 1 ]] || msg_end "$SKIPPED"; } \
+      && skip "$name" \
       && return 4 # skip test
     : $((test_runs++))
-    [[ "$verbose" -eq 0 ]] || { echo; echo "#$tests Test '$*'"; }
   }
 
   # shellcheck disable=SC1083
   function end {
     [[ "$local_fails" -eq 0 ]] || : $((test_fails++))
-    [[ "$verbose" -eq 1 ]] && return
-    msg_end_status "$local_fails"
+    local s
+    [ "$local_fails" -eq 0 ] \
+      && s="true" \
+      || s="false"
+    ok "$name" "$s"
   }
 
   function process {
-    echo "trap 'case \$? in 3) return 0;; 4) : ;; *) err \"$1 failed on line \$((\$LINENO-1))\"; return 1;; esac' ERR" > "$working_file"
+    echo "trap 'case \$? in 3) return 0;; 4) : ;; *) bail \"$1 failed on line \$((\$LINENO-1))\"; return 1;; esac' ERR" > "$working_file"
     cat "$curdir/$1" >> "$working_file"
     sed -i 's/^\s*start \(.*\)$/if start \1; then/g' "$working_file"
     sed -i 's/end/end; fi/g' "$working_file"
+    local -i num_tests
+    num_tests=$(grep -Ec '(^| )start "' "$working_file")
+    plan "$num_tests"
     # shellcheck disable=SC1090
     source "$working_file"
     trap - ERR
   }
 
-  function summary {
-    stdout_verbose
-    echo "---------"
-    echo "$test_runs tests, $test_fails failures"
-    stdout_silent
-    [[ $test_fails -eq 0 ]] || return 1
-  }
-
-  local line script_name pos_x pos_y is_stdin status tests local_fails test_fails test_runs working_dir working_file clean curdir limit skip
+  local line script_name pos_x pos_y is_stdin status tests local_fails test_fails test_runs working_dir working_file clean curdir limit skip name
   # shellcheck disable=SC2034
   local stdout stderr outlines errlines
 
@@ -265,6 +253,7 @@ function main {
   curdir="$(pwd)"
   [ -t 0 ]
   is_stdin=$?
+  name=
 
   # process options
   # shellcheck disable=SC2086
@@ -313,7 +302,7 @@ function main {
 
   # cleanup iff terminate or exit
   # shellcheck disable=SC2064
-  trap "[[ \"$clean\" -eq 1 ]] && rm -rf \"$working_dir\"; rm \"$working_file\"; exit;" INT TERM EXIT
+  trap "[[ \"$clean\" -eq 1 ]] && rm -rf \"$working_dir\"; [ -d \"\"$working_file\"\" ] && rm \"$working_file\"; exit;" INT TERM EXIT
 
   # constants
   local -r \
@@ -326,9 +315,13 @@ function main {
     FAILED="$(colorize "fail" $RED)" \
     SKIPPED="$(colorize "skip" $BLUE)"
 
+  # source tap lib
+  # shellcheck source=tap/libtap.sh
+  . "$curdir/tap/libtap.sh"
+
   # run butt
   # shellcheck disable=SC2015
-  validate "$@" && process "$@" && summary || return $?
+  validate "$@" && process "$@" || return $?
 
 }
 
