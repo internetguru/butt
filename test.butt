@@ -8,8 +8,23 @@ function after {
   :
 }
 
-# start test
-start "Example of complex butt test"
+start "simple test"
+  before
+  debug echo "test"
+  assert_equal $status 0
+  assert_equal "$stdout" test
+  after
+end
+
+start "test stderr"
+  before
+  debug echo "test >&2"
+  assert_equal $status 0
+  assert_equal "$stderr" test
+  after
+end
+
+start "complex test"
 
   # call user function
   before
@@ -43,24 +58,29 @@ start "Example of complex butt test"
 # end test
 end
 
-start "Example of simple test"
-  before
-  debug echo "test"
-  assert_equal $status 0
-  assert_equal "$stdout" test
-  after
-end
+# test case can be placed in loop
+for (( i = 0; i < 3; i++ )); do
+  start "test in loop #$i"
+    debug echo $i
+    assert_equal $status 0
+  end
+done
 
-start "Example of failing test"
-  before
-  debug echo "test"
-  assert_equal $status 0
-  assert_equal "$stdout" fail
-  after
-end
+# dynamic test case
+function test_number {
+  start "test '${1-}' is a number"
+    [[ "${1-}" =~ ^-?[1-9][0-9]*$ ]]
+    assert_equal $? 0
+  end
+}
 
-# start "Example of disabled test"
+test_number 1
+test_number
+test_number abc
+
+# start "example of disabled test"
 #   debug echo "test"
 #   assert_equal $status 0
 #   assert_equal "$stdout" test
 # end
+

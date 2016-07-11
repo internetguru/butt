@@ -63,7 +63,7 @@ plan () {
     planned="$1"
     failed=0
     force_echo "1..$1"
-    #trap finish 0
+    trap finish 0
 }
 
 # Prepare for lazy planning.
@@ -71,7 +71,7 @@ plan_lazy () {
     count=1
     planned=0
     failed=0
-    #trap finish 0
+    trap finish 0
 }
 
 # Report the test status on exit.
@@ -232,8 +232,9 @@ strip_colon_error() {
 
 # Bail out with an error message.
 bail () {
-    force_fail 'Bail out!' "$@"
-    exit 255
+    force_fail 'Bail out!'
+    force_echo " $*"
+    exit 1
 }
 
 # Output a diagnostic on standard error, preceded by the required # mark.

@@ -244,7 +244,7 @@ function main {
     num_tests=$(grep -c "^\s*start \"" "$working_file")
     sed -i 's/^\s*start \(.*\)$/if start \1; then/g' "$working_file"
     sed -i 's/end/end; fi/g' "$working_file"
-    plan "$num_tests"
+    plan_lazy "$num_tests"
     # shellcheck disable=SC1090
     source "$working_file"
     trap - ERR
@@ -336,7 +336,7 @@ function main {
 
   # run butt
   # shellcheck disable=SC2015
-  validate "$@" && process "$@" && finish || return $?
+  validate "$@" && process "$@" && [[ $failed -eq 0 ]] || return $?
 
 }
 
