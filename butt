@@ -57,6 +57,18 @@ function main {
     return 2
   }
 
+  function success {
+    colorize "$*" "$GREEN"
+  }
+
+  function fail {
+    colorize "$*" "$RED"
+  }
+
+  function info {
+    colorize "$*" "$BLUE"
+  }
+
   function stdoutpipe {
     readlink /proc/$$/fd/1 | grep -q "^pipe:"
   }
@@ -157,7 +169,7 @@ function main {
 
   function status {
     [[ "$verbose" -eq 1 && ! $1 -eq 0 ]] \
-      && diag "${FUNCNAME[1]}" \
+      && diag "$(fail "${FUNCNAME[1]}")" \
       && diag "  saw: $2" \
       && diag "  not: $3"
     [[ $1 -eq 0 ]] || : $((local_fails++))
@@ -228,10 +240,10 @@ function main {
   function process {
     echo "trap 'case \$? in 3) return 0;; 4) : ;; *) bail \"$1 failed on line \$((\$LINENO-1))\"; return 1;; esac' ERR" > "$working_file"
     cat "$curdir/$1" >> "$working_file"
+    local -i num_tests
+    num_tests=$(grep -c "^\s*start \"" "$working_file")
     sed -i 's/^\s*start \(.*\)$/if start \1; then/g' "$working_file"
     sed -i 's/end/end; fi/g' "$working_file"
-    local -i num_tests
-    num_tests=$(grep -Ec '(^| )start "' "$working_file")
     plan "$num_tests"
     # shellcheck disable=SC1090
     source "$working_file"
@@ -305,23 +317,26 @@ function main {
   trap "[[ \"$clean\" -eq 1 ]] && rm -rf \"$working_dir\"; [ -d \"\"$working_file\"\" ] && rm \"$working_file\"; exit;" INT TERM EXIT
 
   # constants
-  local -r \
-    RED=1 \
-    GREEN=2 \
-    BLUE=4
+  local RED=1 GREEN=2 BLUE=4
+
   # shellcheck disable=SC2034
   local -r \
-    DONE="$(colorize "ok" $GREEN)" \
-    FAILED="$(colorize "fail" $RED)" \
-    SKIPPED="$(colorize "skip" $BLUE)"
+    DONE="$(success "ok")" \
+    FAILED="$(fail "fail")" \
+    SKIPPED="$(info "skip")"
 
   # source tap lib
-  # shellcheck source=tap/libtap.sh
-  . "$curdir/tap/libtap.sh"
+  if [[ "$BUTT_DATAPATH" == "." ]]; then
+    # shellcheck source=libtap.sh
+    source "$curdir/${BASH_SOURCE%/*}/libtap.sh"
+  else
+    # shellcheck source=libtap.sh
+    source "$BUTT_DATAPATH/libtap.sh"
+  fi
 
   # run butt
   # shellcheck disable=SC2015
-  validate "$@" && process "$@" || return $?
+  validate "$@" && process "$@" && finish || return $?
 
 }
 

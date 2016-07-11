@@ -58,3 +58,9 @@ start "Example of failing test"
   assert_equal "$stdout" fail
   after
 end
+
+# start "Example of disabled test"
+#   debug echo "test"
+#   assert_equal $status 0
+#   assert_equal "$stdout" test
+# end
