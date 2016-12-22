@@ -1,25 +1,25 @@
 language: bash
-sudo: required
+dist: trusty
+sudo: false
 
 addons:
   apt:
     sources:
     - debian-sid
     packages:
+    - python-docutils
     - shellcheck
 
-# before_install:
-#  - sudo pip install docutils
+before_install:
+  - export PREFIX=$HOME/opt
+  - mkdir -p $PREFIX/bin
+  - export PATH=$PREFIX/bin:$PATH
 
-# install:
-#  - "sudo ./configure && sudo PREFIX=/usr make && sudo compiled/install"
+before_script:
+  - ./configure && make && compiled/install
 
 script:
  - shellcheck butt
- # - cd test
- # - git config --global user.email "test@test.cz"
- # - git config --global user.name "test"
- # - ./run
 
 matrix:
   fast_finish: true
