@@ -16,7 +16,8 @@ before_install:
   - export PATH=$PREFIX/bin:$PATH
 
 before_script:
-  - ./configure && make && compiled/install
+  - ./configure && make
+  - cat compiled/install && compiled/install
 
 script:
  - shellcheck butt
