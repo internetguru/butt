@@ -328,14 +328,16 @@ function main {
   # source tap lib
   if [[ "$BUTT_DATAPATH" == "." ]]; then
     # shellcheck source=libtap.sh
+    # shellcheck disable=SC1091
     source "$curdir/${BASH_SOURCE%/*}/libtap.sh"
   else
     # shellcheck source=libtap.sh
+    # shellcheck disable=SC1091
     source "$BUTT_DATAPATH/libtap.sh"
   fi
 
   # run butt
-  # shellcheck disable=SC2015
+  # shellcheck disable=SC2154
   validate "$@" && process "$@" && [[ $failed -eq 0 ]] || return $?
 
 }
