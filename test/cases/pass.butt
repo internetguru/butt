@@ -1,0 +1,44 @@
+#!/bin/env butt
+
+#######################################
+start "empty is ok"
+end
+#######################################
+start "true"
+  true
+end
+#######################################
+start "condition"
+  [ 1 -eq 1 ]
+end
+#######################################
+start "function"
+  function inner {
+    true
+  }
+  inner
+end
+#######################################
+start "assert_equal"
+  assert_equal
+  assert_equal 1 1
+  assert_equal "abc def" "abc def"
+  assert_equal "abc\ndef" "abc\ndef"
+  assert_equal "ěščřžýáíéúů" "ěščřžýáíéúů"
+end
+#######################################
+start "assert_startwith"
+  assert_startwith 1 1
+  assert_startwith "abc def" "abc "
+  assert_startwith "abc\ndef" "abc\n"
+  assert_startwith "ěščřžýáíéúů" "ěščř"
+end
+#######################################
+start "assert_contains"
+  assert_contains
+  assert_contains "abc def" "c d"
+  assert_contains "abc\ndef" "c\nd"
+  assert_contains "ěščřžýáíéúů" "ž"
+  assert_contains "ěščřžýáíéúů" "řžý"
+end
+#######################################
