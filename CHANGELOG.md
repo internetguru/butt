@@ -6,5 +6,5 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 ### Added
- - continuous integration selftestig
+ - continuous integration selftesting
 [Unreleased]: https://github.com/InternetGuru/butt/compare/dev...master
