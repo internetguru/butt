@@ -13,13 +13,13 @@ start "fail without arguments"
   assert_contains "${errlines[0]}" "[error]: Invalid number of arguments"
 end
 #######################################
-start "fail with unknown option"
+start "--unknown fail with unknown option"
   debug 'butt --unknown'
   assert_equal "$status" 2
   assert_contains "${errlines[0]}" "unrecognized option '--unknown'"
 end
 #######################################
-start "show version number"
+start "-V show version number"
   debug 'butt -V'
   assert_equal "$status" 0
   assert_equal "$outlines" "$(version)"
@@ -28,7 +28,7 @@ start "show version number"
   assert_equal "$outlines" "$(version)"
 end
 #######################################
-start "show help"
+start "-h show help"
   debug 'butt -h'
   assert_equal "$status" 0
   assert_startwith "${outlines[0]}" "Usage: butt ["
@@ -37,7 +37,7 @@ start "show help"
   assert_startwith "${outlines[0]}" "Usage: butt ["
 end
 #######################################
-start "skip one test"
+start "--skip=1 skips the first test"
   debug 'butt --color=never -s1 cases/pass.butt'
   assert_equal "$status" 0
   assert_equal "${outlines[0]}" "ok 1 # skip empty is ok"
@@ -46,7 +46,7 @@ start "skip one test"
   assert_equal "${outlines[8]}" "# All 7 tests successful or skipped"
 end
 #######################################
-start "limit to two tests"
+start "--limit=2 limit to two tests"
   debug 'butt --color=never -l2 cases/pass.butt'
   assert_equal "$status" 0
   assert_equal "${outlines[2]}" "1..2"
@@ -100,7 +100,7 @@ start "force monochromatic output"
   assert_equal "${outlines[0]}" "# assert_equal"
 end
 #######################################
-start "auto monochromatic output"
+start "auto monochromatic output in pipe"
   debug 'butt -v cases/fail.butt | cat -'
   assert_equal "$status" 0
   assert_equal "${outlines[0]}" "# assert_equal"
