@@ -17,7 +17,6 @@ SYSTEM       ?= $(system)
 #-------------------------------------------------------------------------------
 
 DIRNAME     := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
-THIS_FILE   := $(lastword $(MAKEFILE_LIST))
 RST2MAN     := rst2man
 PROG        := butt
 DATAPATHVAR := BUTT_DATAPATH
@@ -34,7 +33,7 @@ BINPATH     := $(DESTDIR)$(EXEC_PREFIX)/bin
 SHAREPATH   := $(DESTPATH)/share
 MANDIR      := man/man1
 GCB         := $$(git rev-parse --abbrev-ref HEAD)
-NOMASTER    := $$([[ $(GCB) != master ]] && echo -$(GCB))
+NOMASTER    := $$([ $(GCB) != master ] && echo -$(GCB))
 DISTNAME    := compiled
 DISTDIR     := dist
 INSTFILE    := install
@@ -43,16 +42,46 @@ UNINSTFILE  := uninstall
 USAGEHEADER := "Usage: "
 
 #-------------------------------------------------------------------------------
+# Canned recipes
+#-------------------------------------------------------------------------------
+
+define compile_usage =
+@ echo -n "Compiling usage file ..."
+@ echo -n "$(USAGEHEADER)" > $(DISTNAME)/$(USAGEFILE)
+@ grep "^$(PROG) \[" $(README).rst | sed 's/\\|/|/g' >> $(DISTNAME)/$(USAGEFILE)
+@ echo ".TH" >> $(DISTNAME)/$(USAGEFILE)
+@ sed -n '/^OPTIONS/,/^INSTALL/p' $(README).rst  | grep -v "^\(INSTALL\|OPTIONS\|======\)" \
+| sed 's/^\\/-/;s/^-/.TP 18\n-/' | sed 's/^    //' | sed '/^$$/d' >> $(DISTNAME)/$(USAGEFILE)
+@ echo DONE
+endef
+
+#-------------------------------------------------------------------------------
 # Recipes
 #-------------------------------------------------------------------------------
 
-usage:
-	@ echo -n "Compiling usage file ..."
-	@ echo -n "$(USAGEHEADER)" > $(DISTNAME)/$(USAGEFILE)
-	@ grep "^$(PROG) \[" $(README).rst | sed 's/\\|/|/g' >> $(DISTNAME)/$(USAGEFILE)
-	@ echo ".TH" >> $(DISTNAME)/$(USAGEFILE)
-	@ sed -n '/^OPTIONS/,/^INSTALL/p' $(README).rst  | grep -v "^\(INSTALL\|OPTIONS\|======\)" \
-	| sed 's/^\\/-/;s/^-/.TP 18\n-/' | sed 's/^    //' | sed '/^$$/d' >> $(DISTNAME)/$(USAGEFILE)
+dist: DISTNAME=$(PROG)-$$(cat $(VERFILE))$(NOMASTER)-$(SYSTEM)
+dist: all
+	@ mkdir -p $(DISTDIR)
+	@ tar czf $(DISTDIR)/$(DISTNAME).tar.gz $(DISTNAME)
+	@ rm -rf $(DISTNAME)
+	@ echo "Distribution built; see 'tar tzf $(DISTDIR)/$(DISTNAME).tar.gz'"
+
+distsingle:
+	@ rm -rf $(DISTNAME) 2>/dev/null || true
+	@ mkdir -p $(DISTNAME)
+
+	@ $(compile_usage)
+
+	@ echo -n "Compiling single script ..."
+	@ { \
+	head -n1 $(PROG); \
+	echo "$(USAGEVAR)=\"$$(cat $(DISTNAME)/$(USAGEFILE))\""; \
+	echo "$(VERSIONVAR)=\"$$(cat $(VERFILE))\""; \
+	tail -n+2 $(PROG); \
+	} > $(DISTNAME)/$(PROG)
+	@ awk '/{{{{{/{ system("cat " $$NF); next } {print}' $(DISTNAME)/$(PROG) > $(DISTNAME)/$(PROG).tmp
+	@ mv $(DISTNAME)/$(PROG).tmp $(DISTNAME)/$(PROG)
+	@ chmod +x $(DISTNAME)/$(PROG)
 	@ echo DONE
 
 all:
@@ -84,7 +113,7 @@ all:
 	@ cp $(README).rst $(DISTNAME)/$(README).rst
 	@ echo DONE
 
-	@ $(MAKE) --no-print-directory -f $(THIS_FILE) usage
+	@ $(compile_usage)
 
 	@ echo -n "Compiling install file ..."
 	@ { \
@@ -122,28 +151,3 @@ all:
 	} > $(DISTNAME)/$(UNINSTFILE)
 	@ chmod +x $(DISTNAME)/$(UNINSTFILE)
 	@ echo DONE
-
-distsingle:
-	@ rm -rf $(DISTNAME) 2>/dev/null || true
-	@ mkdir -p $(DISTNAME)
-
-	@ $(MAKE) --no-print-directory -f $(THIS_FILE) usage
-
-	@ echo -n "Compiling single script ..."
-	@ { \
-	head -n1 $(PROG); \
-	echo "$(USAGEVAR)=\"$$(cat $(DISTNAME)/$(USAGEFILE))\""; \
-	echo "$(VERSIONVAR)=\"$$(cat $(VERFILE))\""; \
-	tail -n+2 $(PROG); \
-	} > $(DISTNAME)/$(PROG)
-	@ awk '/{{{{{/{ system("cat " $$NF); next } {print}' $(DISTNAME)/$(PROG) > $(DISTNAME)/$(PROG).tmp
-	@ mv $(DISTNAME)/$(PROG).tmp $(DISTNAME)/$(PROG)
-	@ chmod +x $(DISTNAME)/$(PROG)
-	@ echo DONE
-
-dist: DISTNAME=$(PROG)-$$(cat $(VERFILE))$(NOMASTER)-$(SYSTEM)
-dist: all
-	@ mkdir -p $(DISTDIR)
-	@ tar czf $(DISTDIR)/$(DISTNAME).tar.gz $(DISTNAME)
-	@ rm -rf $(DISTNAME)
-	@ echo "Distribution built; see 'tar tzf $(DISTDIR)/$(DISTNAME).tar.gz'"
