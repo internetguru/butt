@@ -46,7 +46,7 @@ start "--skip=1 skips the first test"
   assert_equal "${outlines[8]}" "# All 7 tests successful or skipped"
 end
 #######################################
-start "--limit=2 limit to two tests"
+start "--limit=2 limits to two tests"
   debug 'butt --color=never -l2 cases/pass.butt'
   assert_equal "$status" 0
   assert_equal "${outlines[2]}" "1..2"
