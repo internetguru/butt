@@ -45,14 +45,14 @@ USAGEHEADER := "Usage: "
 # Canned recipes
 #-------------------------------------------------------------------------------
 
-define compile_usage =
-@ echo -n "Compiling usage file ..."
-@ echo -n "$(USAGEHEADER)" > $(DISTNAME)/$(USAGEFILE)
-@ grep "^$(PROG) \[" $(README).rst | sed 's/\\|/|/g' >> $(DISTNAME)/$(USAGEFILE)
-@ echo ".TH" >> $(DISTNAME)/$(USAGEFILE)
-@ sed -n '/^OPTIONS/,/^INSTALL/p' $(README).rst  | grep -v "^\(INSTALL\|OPTIONS\|======\)" \
-| sed 's/^\\/-/;s/^-/.TP 18\n-/' | sed 's/^    //' | sed '/^$$/d' >> $(DISTNAME)/$(USAGEFILE)
-@ echo DONE
+define compile_usage
+	@echo -n "Compiling usage file ..."
+	@echo -n "$(USAGEHEADER)" > $(DISTNAME)/$(USAGEFILE)
+	@grep "^$(PROG) \[" $(README).rst | sed 's/\\|/|/g' >> $(DISTNAME)/$(USAGEFILE)
+	@echo ".TH" >> $(DISTNAME)/$(USAGEFILE)
+	@sed -n '/^OPTIONS/,/^INSTALL/p' $(README).rst  | grep -v "^\(INSTALL\|OPTIONS\|======\)" \
+	| sed 's/^\\/-/;s/^-/.TP 18\n-/' | sed 's/^    //' | sed '/^$$/d' >> $(DISTNAME)/$(USAGEFILE)
+	@echo DONE
 endef
 
 #-------------------------------------------------------------------------------
@@ -88,7 +88,7 @@ all:
 	@ cp $(README).rst $(DISTNAME)/$(README).rst
 	@ echo DONE
 
-	@ $(compile_usage)
+	$(compile_usage)
 
 	@ echo -n "Compiling install file ..."
 	@ { \
