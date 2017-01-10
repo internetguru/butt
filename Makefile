@@ -17,9 +17,12 @@ SYSTEM       ?= $(system)
 #-------------------------------------------------------------------------------
 
 DIRNAME     := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
+THIS_FILE   := $(lastword $(MAKEFILE_LIST))
 RST2MAN     := rst2man
 PROG        := butt
 DATAPATHVAR := BUTT_DATAPATH
+USAGEVAR    := BUTT_USAGE
+VERSIONVAR  := BUTT_VERSION
 README      := README
 MANFILE     := $(PROG).1
 USAGEFILE   := $(PROG).usage
@@ -43,8 +46,16 @@ USAGEHEADER := "Usage: "
 # Recipes
 #-------------------------------------------------------------------------------
 
-all:
+usage:
+	@ echo -n "Compiling usage file ..."
+	@ echo -n "$(USAGEHEADER)" > $(DISTNAME)/$(USAGEFILE)
+	@ grep "^$(PROG) \[" $(README).rst | sed 's/\\|/|/g' >> $(DISTNAME)/$(USAGEFILE)
+	@ echo ".TH" >> $(DISTNAME)/$(USAGEFILE)
+	@ sed -n '/^OPTIONS/,/^INSTALL/p' $(README).rst  | grep -v "^\(INSTALL\|OPTIONS\|======\)" \
+	| sed 's/^\\/-/;s/^-/.TP 18\n-/' | sed 's/^    //' | sed '/^$$/d' >> $(DISTNAME)/$(USAGEFILE)
+	@ echo DONE
 
+all:
 	@ rm -rf $(DISTNAME) 2>/dev/null || true
 	@ mkdir -p $(DISTNAME)
 	@ cp $(VERFILE) $(CHLOGFILE) $(DISTNAME)
@@ -73,13 +84,7 @@ all:
 	@ cp $(README).rst $(DISTNAME)/$(README).rst
 	@ echo DONE
 
-	@ echo -n "Compiling usage file ..."
-	@ echo -n "$(USAGEHEADER)" > $(DISTNAME)/$(USAGEFILE)
-	@ grep "^$(PROG) \[" $(README).rst | sed 's/\\|/|/g' >> $(DISTNAME)/$(USAGEFILE)
-	@ echo ".TH" >> $(DISTNAME)/$(USAGEFILE)
-	@ sed -n '/^OPTIONS/,/^INSTALL/p' $(README).rst  | grep -v "^\(INSTALL\|OPTIONS\|======\)" \
-	| sed 's/^\\/-/;s/^-/.TP 18\n-/' | sed 's/^    //' | sed '/^$$/d' >> $(DISTNAME)/$(USAGEFILE)
-	@ echo DONE
+	@ $(MAKE) --no-print-directory -f $(THIS_FILE) usage
 
 	@ echo -n "Compiling install file ..."
 	@ { \
@@ -116,6 +121,24 @@ all:
 	echo "echo 'Uninstallation completed.'"; \
 	} > $(DISTNAME)/$(UNINSTFILE)
 	@ chmod +x $(DISTNAME)/$(UNINSTFILE)
+	@ echo DONE
+
+distsingle:
+	@ rm -rf $(DISTNAME) 2>/dev/null || true
+	@ mkdir -p $(DISTNAME)
+
+	@ $(MAKE) --no-print-directory -f $(THIS_FILE) usage
+
+	@ echo -n "Compiling single script ..."
+	@ { \
+	head -n1 $(PROG); \
+	echo "$(USAGEVAR)=\"$$(cat $(DISTNAME)/$(USAGEFILE))\""; \
+	echo "$(VERSIONVAR)=\"$$(cat $(VERFILE))\""; \
+	tail -n+2 $(PROG); \
+	} > $(DISTNAME)/$(PROG)
+	@ awk '/{{{{{/{ system("cat " $$NF); next } {print}' $(DISTNAME)/$(PROG) > $(DISTNAME)/$(PROG).tmp
+	@ mv $(DISTNAME)/$(PROG).tmp $(DISTNAME)/$(PROG)
+	@ chmod +x $(DISTNAME)/$(PROG)
 	@ echo DONE
 
 dist: DISTNAME=$(PROG)-$$(cat $(VERFILE))$(NOMASTER)-$(SYSTEM)
