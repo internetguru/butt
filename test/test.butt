@@ -13,7 +13,7 @@ start "fail without arguments"
   assert_contains "${errlines[0]}" "[error]: Invalid number of arguments"
 end
 #######################################
-start "--unknown fail with unknown option"
+start "--unknown fails with unknown option"
   debug 'butt --unknown'
   assert_equal "$status" 2
   assert_contains "${errlines[0]}" "unrecognized option '--unknown'"
