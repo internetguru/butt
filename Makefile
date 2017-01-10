@@ -59,31 +59,6 @@ endef
 # Recipes
 #-------------------------------------------------------------------------------
 
-dist: DISTNAME=$(PROG)-$$(cat $(VERFILE))$(NOMASTER)-$(SYSTEM)
-dist: all
-	@ mkdir -p $(DISTDIR)
-	@ tar czf $(DISTDIR)/$(DISTNAME).tar.gz $(DISTNAME)
-	@ rm -rf $(DISTNAME)
-	@ echo "Distribution built; see 'tar tzf $(DISTDIR)/$(DISTNAME).tar.gz'"
-
-distsingle:
-	@ rm -rf $(DISTNAME) 2>/dev/null || true
-	@ mkdir -p $(DISTNAME)
-
-	@ $(compile_usage)
-
-	@ echo -n "Compiling single script ..."
-	@ { \
-	head -n1 $(PROG); \
-	echo "$(USAGEVAR)=\"$$(cat $(DISTNAME)/$(USAGEFILE))\""; \
-	echo "$(VERSIONVAR)=\"$$(cat $(VERFILE))\""; \
-	tail -n+2 $(PROG); \
-	} > $(DISTNAME)/$(PROG)
-	@ awk '/{{{{{/{ system("cat " $$NF); next } {print}' $(DISTNAME)/$(PROG) > $(DISTNAME)/$(PROG).tmp
-	@ mv $(DISTNAME)/$(PROG).tmp $(DISTNAME)/$(PROG)
-	@ chmod +x $(DISTNAME)/$(PROG)
-	@ echo DONE
-
 all:
 	@ rm -rf $(DISTNAME) 2>/dev/null || true
 	@ mkdir -p $(DISTNAME)
@@ -150,4 +125,29 @@ all:
 	echo "echo 'Uninstallation completed.'"; \
 	} > $(DISTNAME)/$(UNINSTFILE)
 	@ chmod +x $(DISTNAME)/$(UNINSTFILE)
+	@ echo DONE
+
+dist: DISTNAME=$(PROG)-$$(cat $(VERFILE))$(NOMASTER)-$(SYSTEM)
+dist: all
+	@ mkdir -p $(DISTDIR)
+	@ tar czf $(DISTDIR)/$(DISTNAME).tar.gz $(DISTNAME)
+	@ rm -rf $(DISTNAME)
+	@ echo "Distribution built; see 'tar tzf $(DISTDIR)/$(DISTNAME).tar.gz'"
+
+distsingle:
+	@ rm -rf $(DISTNAME) 2>/dev/null || true
+	@ mkdir -p $(DISTNAME)
+
+	@ $(compile_usage)
+
+	@ echo -n "Compiling single script ..."
+	@ { \
+	head -n1 $(PROG); \
+	echo "$(USAGEVAR)=\"$$(cat $(DISTNAME)/$(USAGEFILE))\""; \
+	echo "$(VERSIONVAR)=\"$$(cat $(VERFILE))\""; \
+	tail -n+2 $(PROG); \
+	} > $(DISTNAME)/$(PROG)
+	@ awk '/{{{{{/{ system("cat " $$NF); next } {print}' $(DISTNAME)/$(PROG) > $(DISTNAME)/$(PROG).tmp
+	@ mv $(DISTNAME)/$(PROG).tmp $(DISTNAME)/$(PROG)
+	@ chmod +x $(DISTNAME)/$(PROG)
 	@ echo DONE
