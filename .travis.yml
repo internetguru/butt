@@ -21,6 +21,7 @@ before_script:
 
 script:
  - shellcheck butt
+ - butt -w test test/test.butt # TODO run tests with stable version
 
 matrix:
   fast_finish: true

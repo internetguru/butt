@@ -1,0 +1,114 @@
+#!/bin/env butt
+
+#######################################
+## Basic
+#######################################
+# start "do not process commented lines"
+#   assert_equal 1 0
+# end
+#######################################
+start "fail without arguments"
+  debug 'butt'
+  assert_equal "$status" 2
+  assert_contains "${errlines[0]}" "[error]: Invalid number of arguments"
+end
+#######################################
+start "--unknown fails with unknown option"
+  debug 'butt --unknown'
+  assert_equal "$status" 2
+  assert_contains "${errlines[0]}" "unrecognized option '--unknown'"
+end
+#######################################
+start "-V show version number"
+  debug 'butt -V'
+  assert_equal "$status" 0
+  assert_equal "$outlines" "$(version)"
+  debug 'butt --version'
+  assert_equal "$status" 0
+  assert_equal "$outlines" "$(version)"
+end
+#######################################
+start "-h show help"
+  debug 'butt -h'
+  assert_equal "$status" 0
+  assert_startwith "${outlines[0]}" "Usage: butt ["
+  debug 'butt --help'
+  assert_equal "$status" 0
+  assert_startwith "${outlines[0]}" "Usage: butt ["
+end
+#######################################
+start "--skip=1 skips the first test"
+  debug 'butt --color=never -s1 cases/pass.butt'
+  assert_equal "$status" 0
+  assert_equal "${outlines[0]}" "ok 1 # skip empty is ok"
+  assert_equal "${outlines[1]}" "ok 2 - true"
+  assert_equal "${outlines[7]}" "1..7"
+  assert_equal "${outlines[8]}" "# All 7 tests successful or skipped"
+end
+#######################################
+start "--limit=2 limits to two tests"
+  debug 'butt --color=never -l2 cases/pass.butt'
+  assert_equal "$status" 0
+  assert_equal "${outlines[2]}" "1..2"
+  assert_equal "${outlines[3]}" "# All 2 tests successful or skipped"
+end
+#######################################
+## Butt output
+#######################################
+start "do not fail with empty file"
+  debug 'butt cases/empty.butt'
+  assert_equal "$status" 0
+  assert_equal "$outlines" "1..0"
+end
+#######################################
+start "return on terminating command preserving status"
+  debug 'butt cases/terminate.butt'
+  assert_equal "$status" 111
+  assert_equal "${outlines[1]}" "1..1"
+end
+#######################################
+start "process all passing tests"
+  debug 'butt cases/pass.butt'
+  assert_equal "$status" 0
+  assert_equal "${outlines[7]}" "1..7"
+  assert_equal "${outlines[8]}" "# All 7 tests successful or skipped"
+end
+#######################################
+start "process tests until an invalid one"
+  debug 'butt --color=never cases/bail.butt'
+  assert_equal "$status" 1
+  assert_equal "${outlines[0]}" "Bail out! cases/bail.butt failed on line 5"
+end
+#######################################
+start "process all failing tests"
+  debug 'butt cases/fail.butt'
+  assert_equal "$status" 1
+  assert_equal "${outlines[3]}" "1..3"
+  assert_equal "${outlines[4]}" "# Looks like you failed 3 tests of 3"
+end
+#######################################
+start "process all failing tests (verbose)"
+  debug 'butt -v cases/fail.butt'
+  assert_equal "$status" 1
+  assert_equal "${outlines[1]}" "#   saw: a"
+  assert_equal "${outlines[2]}" "#   not: "
+end
+#######################################
+start "force monochromatic output"
+  debug 'butt -v --color=never cases/fail.butt'
+  assert_equal "$status" 1
+  assert_equal "${outlines[0]}" "# assert_equal"
+end
+#######################################
+start "auto monochromatic output in pipe"
+  debug 'butt -v cases/fail.butt | cat -'
+  assert_equal "$status" 0
+  assert_equal "${outlines[0]}" "# assert_equal"
+end
+#######################################
+start "force colored output"
+  debug 'butt -v --color=always cases/fail.butt | cat -'
+  assert_equal "$status" 0
+  assert_equal "${outlines[0]}" "# $(tput setaf "1")assert_equal$(tput sgr0)"
+end
+#######################################
