@@ -130,22 +130,21 @@ dist: compile
 	@ tar czf $(TMPDIR).tar.gz $(TMPDIR)
 	@ echo "Distribution built; see 'tar tzf $(TMPDIR).tar.gz'"
 
+distsingle: TMPDIR=.
 distsingle:
-	@ mkdir -p $(TMPDIR)
-
 	@ $(compile_usage)
 
 	@ echo -n "Compiling single script ..."
 	@ { \
 	head -n1 $(PROG); \
-	echo "$(USAGEVAR)=\"$$(cat $(TMPDIR)/$(USAGEFILE))\""; \
+	echo "$(USAGEVAR)=\"$$(cat $(USAGEFILE))\""; \
 	echo "$(VERSIONVAR)=\"$$(cat $(VERFILE))\""; \
 	tail -n+2 $(PROG); \
-	} > $(TMPDIR)/$(PROGSINGLE)
-	# replace line like "#replaceline# source.sh" with content of source.sh
-	@ awk '/#replaceline#/{ system("cat " $$NF); next } {print}' $(TMPDIR)/$(PROGSINGLE) > $(TMPDIR)/$(PROGSINGLE).tmp
-	@ mv $(TMPDIR)/$(PROGSINGLE).tmp $(TMPDIR)/$(PROGSINGLE)
-	@ chmod +x $(TMPDIR)/$(PROGSINGLE)
+	} > $(PROGSINGLE)
+	@ # replace line like "#replaceline# source.sh" with content of source.sh
+	@ awk '/#replaceline#/{ system("cat " $$NF); next } {print}' $(PROGSINGLE) > $(PROGSINGLE).tmp
+	@ mv $(PROGSINGLE).tmp $(PROGSINGLE)
+	@ chmod +x $(PROGSINGLE)
 	@ echo DONE
 
 clean:
