@@ -5,7 +5,7 @@
 # Specify default values.
 prefix       := /usr/local
 destdir      :=
-system       := cygwin
+system       := linux
 # Fallback to defaults but allow to get the values from environment.
 PREFIX       ?= $(prefix)
 EXEC_PREFIX  ?= $(PREFIX)
