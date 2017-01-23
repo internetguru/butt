@@ -150,4 +150,8 @@ distsingle:
 clean:
 	@ rm -rf $(TMPDIR)
 	@ rm -rf $(DISTNAME)
+	@ rm -rf $(USAGEFILE)
+
+distclean:
 	@ rm -rf *.tar.gz
+	@ rm -rf $(PROGSINGLE)
