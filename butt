@@ -340,7 +340,7 @@ function main {
   [[ "$BUTT_DATAPATH" == "." ]] && BUTT_DATAPATH="$curdir/${BASH_SOURCE%/*}"
   # shellcheck source=libtap.sh
   # shellcheck disable=SC1091
-  source "$BUTT_DATAPATH/libtap.sh" # {{{{{ libtap.sh
+  source "$BUTT_DATAPATH/libtap.sh" #replaceline# libtap.sh
 
   # run butt
   # shellcheck disable=SC2154

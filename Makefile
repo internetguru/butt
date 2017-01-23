@@ -140,7 +140,8 @@ distsingle:
 	echo "$(VERSIONVAR)=\"$$(cat $(VERFILE))\""; \
 	tail -n+2 $(PROG); \
 	} > $(DISTNAME)/$(PROGSINGLE)
-	@ awk '/{{{{{/{ system("cat " $$NF); next } {print}' $(DISTNAME)/$(PROGSINGLE) > $(DISTNAME)/$(PROGSINGLE).tmp
+	# replace line like "#replaceline# source.sh" with content of source.sh
+	@ awk '/#replaceline#/{ system("cat " $$NF); next } {print}' $(DISTNAME)/$(PROGSINGLE) > $(DISTNAME)/$(PROGSINGLE).tmp
 	@ mv $(DISTNAME)/$(PROGSINGLE).tmp $(DISTNAME)/$(PROGSINGLE)
 	@ chmod +x $(DISTNAME)/$(PROGSINGLE)
 	@ echo DONE
