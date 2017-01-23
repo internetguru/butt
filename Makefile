@@ -19,6 +19,7 @@ SYSTEM       ?= $(system)
 DIRNAME     := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 RST2MAN     := rst2man
 PROG        := butt
+PROGSINGLE  := butt.sh
 DATAPATHVAR := BUTT_DATAPATH
 USAGEVAR    := BUTT_USAGE
 VERSIONVAR  := BUTT_VERSION
@@ -146,8 +147,8 @@ distsingle:
 	echo "$(USAGEVAR)=\"$$(cat $(DISTNAME)/$(USAGEFILE))\""; \
 	echo "$(VERSIONVAR)=\"$$(cat $(VERFILE))\""; \
 	tail -n+2 $(PROG); \
-	} > $(DISTNAME)/$(PROG)
-	@ awk '/{{{{{/{ system("cat " $$NF); next } {print}' $(DISTNAME)/$(PROG) > $(DISTNAME)/$(PROG).tmp
-	@ mv $(DISTNAME)/$(PROG).tmp $(DISTNAME)/$(PROG)
-	@ chmod +x $(DISTNAME)/$(PROG)
+	} > $(DISTNAME)/$(PROGSINGLE)
+	@ awk '/{{{{{/{ system("cat " $$NF); next } {print}' $(DISTNAME)/$(PROGSINGLE) > $(DISTNAME)/$(PROGSINGLE).tmp
+	@ mv $(DISTNAME)/$(PROGSINGLE).tmp $(DISTNAME)/$(PROGSINGLE)
+	@ chmod +x $(DISTNAME)/$(PROGSINGLE)
 	@ echo DONE
