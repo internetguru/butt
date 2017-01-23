@@ -12,6 +12,7 @@ addons:
 
 before_install:
   - export PREFIX=$HOME/opt
+  - export SYSTEM=ubuntu
   - mkdir -p $PREFIX/bin
   - export PATH=$PREFIX/bin:$PATH
 
