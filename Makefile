@@ -33,9 +33,7 @@ DESTPATH    := $(DESTDIR)$(PREFIX)
 BINPATH     := $(DESTDIR)$(EXEC_PREFIX)/bin
 SHAREPATH   := $(DESTPATH)/share
 MANDIR      := man/man1
-GCB         := $$(git rev-parse --abbrev-ref HEAD)
-NOMASTER    := $$([ $(GCB) != master ] && echo -$(GCB))
-DISTNAME    := compiled
+DISTNAME    := $(PROG)-$$(cat $(VERFILE))-$(SYSTEM)
 DISTDIR     := dist
 INSTFILE    := install
 INSDEVTFILE := install_develop
@@ -60,8 +58,7 @@ endef
 # Recipes
 #-------------------------------------------------------------------------------
 
-all:
-	@ rm -rf $(DISTNAME) 2>/dev/null || true
+dist:
 	@ mkdir -p $(DISTNAME)
 	@ cp $(VERFILE) $(CHLOGFILE) $(DISTNAME)
 
@@ -126,17 +123,12 @@ all:
 	echo "echo 'Uninstallation completed.'"; \
 	} > $(DISTNAME)/$(UNINSTFILE)
 	@ chmod +x $(DISTNAME)/$(UNINSTFILE)
-	@ echo DONE
 
-dist: DISTNAME=$(PROG)-$$(cat $(VERFILE))$(NOMASTER)-$(SYSTEM)
-dist: all
 	@ mkdir -p $(DISTDIR)
 	@ tar czf $(DISTDIR)/$(DISTNAME).tar.gz $(DISTNAME)
-	@ rm -rf $(DISTNAME)
 	@ echo "Distribution built; see 'tar tzf $(DISTDIR)/$(DISTNAME).tar.gz'"
 
 distsingle:
-	@ rm -rf $(DISTNAME) 2>/dev/null || true
 	@ mkdir -p $(DISTNAME)
 
 	@ $(compile_usage)
@@ -152,3 +144,7 @@ distsingle:
 	@ mv $(DISTNAME)/$(PROGSINGLE).tmp $(DISTNAME)/$(PROGSINGLE)
 	@ chmod +x $(DISTNAME)/$(PROGSINGLE)
 	@ echo DONE
+
+clean:
+	@ rm -rf $(DISTNAME)
+	@ rm -rf $(DISTDIR)
