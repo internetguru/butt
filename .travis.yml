@@ -39,7 +39,7 @@ script:
 - shellcheck butt
 - butt -w test test/test.butt
 
-# Set MSG variable to text between first and second heading from CHANGELOG
+# Extract text from CHANGELOG between first and second subheading
 before_deploy:
 - MSG="$(awk 'BEFORE{out=0} /^## /{if(out==0){out=1; next} else {out="end"}} out==1{print}' CHANGELOG.md)"
 
