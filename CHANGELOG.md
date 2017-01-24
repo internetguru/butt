@@ -6,5 +6,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 ### Added
+ - `make distsingle` target compiles butt into a single file
  - continuous integration selftesting
+
 [Unreleased]: https://github.com/InternetGuru/butt/compare/dev...master

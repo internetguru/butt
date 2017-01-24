@@ -5,7 +5,7 @@
 # Specify default values.
 prefix       := /usr/local
 destdir      :=
-system       := cygwin
+system       := linux
 # Fallback to defaults but allow to get the values from environment.
 PREFIX       ?= $(prefix)
 EXEC_PREFIX  ?= $(PREFIX)
@@ -19,7 +19,10 @@ SYSTEM       ?= $(system)
 DIRNAME     := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 RST2MAN     := rst2man
 PROG        := butt
+PROGSINGLE  := butt.sh
 DATAPATHVAR := BUTT_DATAPATH
+USAGEVAR    := BUTT_USAGE
+VERSIONVAR  := BUTT_VERSION
 README      := README
 MANFILE     := $(PROG).1
 USAGEFILE   := $(PROG).usage
@@ -30,34 +33,48 @@ DESTPATH    := $(DESTDIR)$(PREFIX)
 BINPATH     := $(DESTDIR)$(EXEC_PREFIX)/bin
 SHAREPATH   := $(DESTPATH)/share
 MANDIR      := man/man1
-GCB         := $$(git rev-parse --abbrev-ref HEAD)
-NOMASTER    := $$([[ $(GCB) != master ]] && echo -$(GCB))
-DISTNAME    := compiled
-DISTDIR     := dist
+DISTNAME    := $(PROG)-$$(cat $(VERFILE))-$(SYSTEM)
+# COMPILEDIR is overriden by dist and distsingle recipes
+COMPILEDIR  := compiled
 INSTFILE    := install
 INSDEVTFILE := install_develop
 UNINSTFILE  := uninstall
 USAGEHEADER := "Usage: "
 
 #-------------------------------------------------------------------------------
+# Canned recipes
+#-------------------------------------------------------------------------------
+
+# Extract text from README between headers and format it to troff syntax
+define compile_usage
+	@echo -n "Compiling usage file ..."
+	@echo -n "$(USAGEHEADER)" > $(COMPILEDIR)/$(USAGEFILE)
+	@grep "^$(PROG) \[" $(README).rst | sed 's/\\|/|/g' >> $(COMPILEDIR)/$(USAGEFILE)
+	@echo ".TH" >> $(COMPILEDIR)/$(USAGEFILE)
+	@sed -n '/^OPTIONS/,/^INSTALL/p' $(README).rst  | grep -v "^\(INSTALL\|OPTIONS\|======\)" \
+	| sed 's/^\\/-/;s/^-/.TP 18\n-/' | sed 's/^    //' | sed '/^$$/d' >> $(COMPILEDIR)/$(USAGEFILE)
+	@echo DONE
+endef
+
+#-------------------------------------------------------------------------------
 # Recipes
 #-------------------------------------------------------------------------------
 
-all:
+compile:
+	@ mkdir -p $(COMPILEDIR)
+	@ cp $(VERFILE) $(CHLOGFILE) $(COMPILEDIR)
 
-	@ rm -rf $(DISTNAME) 2>/dev/null || true
-	@ mkdir -p $(DISTNAME)
-	@ cp $(VERFILE) $(CHLOGFILE) $(DISTNAME)
-
+	@ # Insert default datapath variable into $(PROG)
 	@ echo -n "Compiling command file ..."
 	@ { \
 	head -n1 $(PROG); \
 	echo "$(DATAPATHVAR)=\"$(SHAREPATH)/$(PROG)\""; \
 	tail -n+2 $(PROG); \
-	} > $(DISTNAME)/$(PROG)
-	@ chmod +x $(DISTNAME)/$(PROG)
+	} > $(COMPILEDIR)/$(PROG)
+	@ chmod +x $(COMPILEDIR)/$(PROG)
 	@ echo DONE
 
+	@ # Extract text from README between headers and convert it to troff syntax
 	@ echo -n "Compiling man file ..."
 	@ { \
 	echo -n ".TH \"$(PROG)\" \"1\" "; \
@@ -65,21 +82,16 @@ all:
 	echo -n "\"User Manual\" "; \
 	echo -n "\"Version "; echo -n $$(cat $(VERFILE)); echo -n "\" "; \
 	echo; \
-	} > $(DISTNAME)/$(MANFILE)
-	@ cat $(README).rst | sed -n '/^NAME/,/^INSTALL/p;/^EXIT STATUS/,//p' $(README).rst | grep -v "^INSTALL" | sed 's/`\(.*\)<\(.*\)>`__/\1\n\t\2/g' | $(RST2MAN) | tail -n+8 >> $(DISTNAME)/$(MANFILE)
+	} > $(COMPILEDIR)/$(MANFILE)
+	@ cat $(README).rst | sed -n '/^NAME/,/^INSTALL/p;/^EXIT STATUS/,//p' $(README).rst | grep -v "^INSTALL" | sed 's/`\(.*\)<\(.*\)>`__/\1\n\t\2/g' | $(RST2MAN) | tail -n+8 >> $(COMPILEDIR)/$(MANFILE)
 	@ echo DONE
 
+	@ # Copy README into COMPILEDIR
 	@ echo -n "Compiling readme file ..."
-	@ cp $(README).rst $(DISTNAME)/$(README).rst
+	@ cp $(README).rst $(COMPILEDIR)/$(README).rst
 	@ echo DONE
 
-	@ echo -n "Compiling usage file ..."
-	@ echo -n "$(USAGEHEADER)" > $(DISTNAME)/$(USAGEFILE)
-	@ grep "^$(PROG) \[" $(README).rst | sed 's/\\|/|/g' >> $(DISTNAME)/$(USAGEFILE)
-	@ echo ".TH" >> $(DISTNAME)/$(USAGEFILE)
-	@ sed -n '/^OPTIONS/,/^INSTALL/p' $(README).rst  | grep -v "^\(INSTALL\|OPTIONS\|======\)" \
-	| sed 's/^\\/-/;s/^-/.TP 18\n-/' | sed 's/^    //' | sed '/^$$/d' >> $(DISTNAME)/$(USAGEFILE)
-	@ echo DONE
+	$(compile_usage)
 
 	@ echo -n "Compiling install file ..."
 	@ { \
@@ -98,8 +110,8 @@ all:
 	echo "&& cp -r \"$(TAPLIB)\" \"\$$dir/$(USAGEFILE)\" \"\$$dir/$(VERFILE)\" \"\$$SHAREPATH/$(PROG)\" \\"; \
 	echo "&& echo 'Installation completed.' \\"; \
 	echo "|| { echo 'Installation failed.'; exit 1; }"; \
-	} > $(DISTNAME)/$(INSTFILE)
-	@ chmod +x $(DISTNAME)/$(INSTFILE)
+	} > $(COMPILEDIR)/$(INSTFILE)
+	@ chmod +x $(COMPILEDIR)/$(INSTFILE)
 	@ echo DONE
 
 	@ echo -n "Compiling uninstall file ..."
@@ -114,13 +126,38 @@ all:
 	echo "rm \"\$$BINPATH/$(PROG)\""; \
 	echo "rm -rf \"\$$SHAREPATH/$(PROG)\""; \
 	echo "echo 'Uninstallation completed.'"; \
-	} > $(DISTNAME)/$(UNINSTFILE)
-	@ chmod +x $(DISTNAME)/$(UNINSTFILE)
+	} > $(COMPILEDIR)/$(UNINSTFILE)
+	@ chmod +x $(COMPILEDIR)/$(UNINSTFILE)
 	@ echo DONE
 
-dist: DISTNAME=$(PROG)-$$(cat $(VERFILE))$(NOMASTER)-$(SYSTEM)
-dist: all
-	@ mkdir -p $(DISTDIR)
-	@ tar czf $(DISTDIR)/$(DISTNAME).tar.gz $(DISTNAME)
+dist: COMPILEDIR=$(DISTNAME)
+dist: compile
+	@ tar czf $(COMPILEDIR).tar.gz $(COMPILEDIR)
+	@ echo "Distribution built; see 'tar tzf $(COMPILEDIR).tar.gz'"
+
+distsingle: COMPILEDIR=.
+distsingle:
+	@ $(compile_usage)
+
+	@ echo -n "Compiling single script ..."
+	@ # Insert content of $(USAGEFILE) and $(VERFILE) into $(PROG) as variables
+	@ { \
+	head -n1 $(PROG); \
+	echo "$(USAGEVAR)=\"$$(cat $(USAGEFILE))\""; \
+	echo "$(VERSIONVAR)=\"$$(cat $(VERFILE))\""; \
+	tail -n+2 $(PROG); \
+	} > $(PROGSINGLE)
+	@ # replace line like "#replaceline# source.sh" with content of source.sh
+	@ awk '/#replaceline#/{ system("cat " $$NF); next } {print}' $(PROGSINGLE) > $(PROGSINGLE).tmp
+	@ mv $(PROGSINGLE).tmp $(PROGSINGLE)
+	@ chmod +x $(PROGSINGLE)
+	@ echo DONE
+
+clean:
+	@ rm -rf $(COMPILEDIR)
 	@ rm -rf $(DISTNAME)
-	@ echo "Distribution built; see 'tar tzf $(DISTDIR)/$(DISTNAME).tar.gz'"
+	@ rm $(USAGEFILE)
+
+distclean:
+	@ rm *.tar.gz
+	@ rm $(PROGSINGLE)
