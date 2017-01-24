@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 ### Added
+ - automatic deployment into GitHub releases
  - `make distsingle` target compiles butt into a single file
  - continuous integration selftesting
 
