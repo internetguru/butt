@@ -41,7 +41,7 @@ script:
 
 # Extract text from CHANGELOG between first and second subheading
 before_deploy:
-  - MSG="$(awk 'BEFORE{out=0} /^## /{if(out==0){out=1; next} else {out="end"}} out==1{print}' CHANGELOG.md)"
+  - RELEASE_MSG="$(awk 'BEFORE{out=0} /^## /{if(out==0){out=1; next} else {out="end"}} out==1{print}' CHANGELOG.md)"
 
 deploy:
   provider: releases
@@ -50,7 +50,7 @@ deploy:
   file: "$DEPLOY_FILE"
   skip_cleanup: true
   file_glob: true
-  body: "$MSG"
+  body: "$RELEASE_MSG"
   on:
     repo: InternetGuru/butt
     branch: master
