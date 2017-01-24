@@ -11,37 +11,37 @@ addons:
     - shellcheck
 
 env:
-- DIST=regular DEPLOY_FILE=butt-*.tar.gz
-- DIST=single DEPLOY_FILE=compiled/butt
+  - DIST=regular DEPLOY_FILE=butt-*.tar.gz
+  - DIST=single DEPLOY_FILE=butt.sh
 
 before_install:
-- export PREFIX=$HOME/opt
-- mkdir -p $PREFIX/bin
-- export PATH=$PREFIX/bin:$PATH
+  - export PREFIX=$HOME/opt
+  - mkdir -p $PREFIX/bin
+  - export PATH=$PREFIX/bin:$PATH
 
 before_script:
-- |
-  if [[ $DIST == regular ]]; then
-    ./configure \
-      && make \
-      && cat compiled/install \
-      && compiled/install \
-      && PREFIX=/usr/local make dist
-  fi
-- |
-  if [[ $DIST == single ]]; then
-    ./configure \
-      && make distsingle \
-      && cp compiled/butt $PREFIX/bin/butt
-  fi
+  - |
+    if [[ $DIST == regular ]]; then
+      ./configure \
+        && make \
+        && cat compiled/install \
+        && compiled/install \
+        && PREFIX=/usr/local make dist
+    fi
+  - |
+    if [[ $DIST == single ]]; then
+      ./configure \
+        && make distsingle \
+        && cp butt.sh $PREFIX/bin/butt
+    fi
 
 script:
-- shellcheck butt
-- butt -w test test/test.butt
+  - shellcheck butt
+  - butt -w test test/test.butt
 
 # Extract text from CHANGELOG between first and second subheading
 before_deploy:
-- MSG="$(awk 'BEFORE{out=0} /^## /{if(out==0){out=1; next} else {out="end"}} out==1{print}' CHANGELOG.md)"
+  - MSG="$(awk 'BEFORE{out=0} /^## /{if(out==0){out=1; next} else {out="end"}} out==1{print}' CHANGELOG.md)"
 
 deploy:
   provider: releases
