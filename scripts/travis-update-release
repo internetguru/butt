@@ -1,4 +1,16 @@
 #!/usr/bin/env ruby
+###
+# Travis-CI script to set GitHub release description
+# as part of deployment process.
+#
+# Expects:
+# - octokit to be installed; this is handled by Travis by installing dpl
+# - GITHUB_TOKEN environment variable with GitHub API secret
+# - TRAVIS_REPO_SLUG environment variable set to GitHub repo name (e.g. username/repo)
+# - TRAVIS_TAG environment variable set to Git tag which triggered the build
+#
+# Reads STDIN as a description of the release.
+###
 require "octokit"
 
 gh_token = ENV.fetch("GITHUB_TOKEN")
