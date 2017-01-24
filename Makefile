@@ -34,7 +34,8 @@ BINPATH     := $(DESTDIR)$(EXEC_PREFIX)/bin
 SHAREPATH   := $(DESTPATH)/share
 MANDIR      := man/man1
 DISTNAME    := $(PROG)-$$(cat $(VERFILE))-$(SYSTEM)
-TMPDIR      := compiled
+# COMPILEDIR is overriden by dist and distsingle recipes
+COMPILEDIR  := compiled
 INSTFILE    := install
 INSDEVTFILE := install_develop
 UNINSTFILE  := uninstall
@@ -44,13 +45,14 @@ USAGEHEADER := "Usage: "
 # Canned recipes
 #-------------------------------------------------------------------------------
 
+# Extract text from README between headers and format it to troff syntax
 define compile_usage
 	@echo -n "Compiling usage file ..."
-	@echo -n "$(USAGEHEADER)" > $(TMPDIR)/$(USAGEFILE)
-	@grep "^$(PROG) \[" $(README).rst | sed 's/\\|/|/g' >> $(TMPDIR)/$(USAGEFILE)
-	@echo ".TH" >> $(TMPDIR)/$(USAGEFILE)
+	@echo -n "$(USAGEHEADER)" > $(COMPILEDIR)/$(USAGEFILE)
+	@grep "^$(PROG) \[" $(README).rst | sed 's/\\|/|/g' >> $(COMPILEDIR)/$(USAGEFILE)
+	@echo ".TH" >> $(COMPILEDIR)/$(USAGEFILE)
 	@sed -n '/^OPTIONS/,/^INSTALL/p' $(README).rst  | grep -v "^\(INSTALL\|OPTIONS\|======\)" \
-	| sed 's/^\\/-/;s/^-/.TP 18\n-/' | sed 's/^    //' | sed '/^$$/d' >> $(TMPDIR)/$(USAGEFILE)
+	| sed 's/^\\/-/;s/^-/.TP 18\n-/' | sed 's/^    //' | sed '/^$$/d' >> $(COMPILEDIR)/$(USAGEFILE)
 	@echo DONE
 endef
 
@@ -59,18 +61,20 @@ endef
 #-------------------------------------------------------------------------------
 
 compile:
-	@ mkdir -p $(TMPDIR)
-	@ cp $(VERFILE) $(CHLOGFILE) $(TMPDIR)
+	@ mkdir -p $(COMPILEDIR)
+	@ cp $(VERFILE) $(CHLOGFILE) $(COMPILEDIR)
 
+	@ # Insert default datapath variable into $(PROG)
 	@ echo -n "Compiling command file ..."
 	@ { \
 	head -n1 $(PROG); \
 	echo "$(DATAPATHVAR)=\"$(SHAREPATH)/$(PROG)\""; \
 	tail -n+2 $(PROG); \
-	} > $(TMPDIR)/$(PROG)
-	@ chmod +x $(TMPDIR)/$(PROG)
+	} > $(COMPILEDIR)/$(PROG)
+	@ chmod +x $(COMPILEDIR)/$(PROG)
 	@ echo DONE
 
+	@ # Extract text from README between headers and convert it to troff syntax
 	@ echo -n "Compiling man file ..."
 	@ { \
 	echo -n ".TH \"$(PROG)\" \"1\" "; \
@@ -78,12 +82,13 @@ compile:
 	echo -n "\"User Manual\" "; \
 	echo -n "\"Version "; echo -n $$(cat $(VERFILE)); echo -n "\" "; \
 	echo; \
-	} > $(TMPDIR)/$(MANFILE)
-	@ cat $(README).rst | sed -n '/^NAME/,/^INSTALL/p;/^EXIT STATUS/,//p' $(README).rst | grep -v "^INSTALL" | sed 's/`\(.*\)<\(.*\)>`__/\1\n\t\2/g' | $(RST2MAN) | tail -n+8 >> $(TMPDIR)/$(MANFILE)
+	} > $(COMPILEDIR)/$(MANFILE)
+	@ cat $(README).rst | sed -n '/^NAME/,/^INSTALL/p;/^EXIT STATUS/,//p' $(README).rst | grep -v "^INSTALL" | sed 's/`\(.*\)<\(.*\)>`__/\1\n\t\2/g' | $(RST2MAN) | tail -n+8 >> $(COMPILEDIR)/$(MANFILE)
 	@ echo DONE
 
+	@ # Copy README into COMPILEDIR
 	@ echo -n "Compiling readme file ..."
-	@ cp $(README).rst $(TMPDIR)/$(README).rst
+	@ cp $(README).rst $(COMPILEDIR)/$(README).rst
 	@ echo DONE
 
 	$(compile_usage)
@@ -105,8 +110,8 @@ compile:
 	echo "&& cp -r \"$(TAPLIB)\" \"\$$dir/$(USAGEFILE)\" \"\$$dir/$(VERFILE)\" \"\$$SHAREPATH/$(PROG)\" \\"; \
 	echo "&& echo 'Installation completed.' \\"; \
 	echo "|| { echo 'Installation failed.'; exit 1; }"; \
-	} > $(TMPDIR)/$(INSTFILE)
-	@ chmod +x $(TMPDIR)/$(INSTFILE)
+	} > $(COMPILEDIR)/$(INSTFILE)
+	@ chmod +x $(COMPILEDIR)/$(INSTFILE)
 	@ echo DONE
 
 	@ echo -n "Compiling uninstall file ..."
@@ -121,20 +126,21 @@ compile:
 	echo "rm \"\$$BINPATH/$(PROG)\""; \
 	echo "rm -rf \"\$$SHAREPATH/$(PROG)\""; \
 	echo "echo 'Uninstallation completed.'"; \
-	} > $(TMPDIR)/$(UNINSTFILE)
-	@ chmod +x $(TMPDIR)/$(UNINSTFILE)
+	} > $(COMPILEDIR)/$(UNINSTFILE)
+	@ chmod +x $(COMPILEDIR)/$(UNINSTFILE)
 	@ echo DONE
 
-dist: TMPDIR=$(DISTNAME)
+dist: COMPILEDIR=$(DISTNAME)
 dist: compile
-	@ tar czf $(TMPDIR).tar.gz $(TMPDIR)
-	@ echo "Distribution built; see 'tar tzf $(TMPDIR).tar.gz'"
+	@ tar czf $(COMPILEDIR).tar.gz $(COMPILEDIR)
+	@ echo "Distribution built; see 'tar tzf $(COMPILEDIR).tar.gz'"
 
-distsingle: TMPDIR=.
+distsingle: COMPILEDIR=.
 distsingle:
 	@ $(compile_usage)
 
 	@ echo -n "Compiling single script ..."
+	@ # Insert content of $(USAGEFILE) and $(VERFILE) into $(PROG) as variables
 	@ { \
 	head -n1 $(PROG); \
 	echo "$(USAGEVAR)=\"$$(cat $(USAGEFILE))\""; \
@@ -148,10 +154,10 @@ distsingle:
 	@ echo DONE
 
 clean:
-	@ rm -rf $(TMPDIR)
+	@ rm -rf $(COMPILEDIR)
 	@ rm -rf $(DISTNAME)
-	@ rm -rf $(USAGEFILE)
+	@ rm $(USAGEFILE)
 
 distclean:
-	@ rm -rf *.tar.gz
-	@ rm -rf $(PROGSINGLE)
+	@ rm *.tar.gz
+	@ rm $(PROGSINGLE)
