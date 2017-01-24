@@ -1,0 +1,25 @@
+#!/bin/env butt
+
+#######################################
+start "assert_equal"
+  assert_equal "a"
+  assert_equal 1 2
+  assert_equal "abc def" "ABC def"
+  assert_equal "abc\ndef" "abc def"
+  assert_equal "ěščřžýáíéúů" "ěščřžýáíeuu"
+end
+#######################################
+start "assert_startwith"
+  assert_startwith 1
+  assert_startwith "abc def" "bc"
+  assert_startwith "abc\ndef" "def"
+  assert_startwith "ěščřžýáíéúů" "esc"
+end
+#######################################
+start "assert_contains"
+  assert_contains 1
+  assert_contains "abc def" "cd"
+  assert_contains "abc\ndef" "c d"
+  assert_contains "ěščřžýáíéúů" "z"
+end
+#######################################

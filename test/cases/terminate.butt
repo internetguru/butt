@@ -1,0 +1,11 @@
+#!/bin/env butt
+
+start "test1"
+  true
+end
+
+exit 111
+
+start "test2"
+  false
+end

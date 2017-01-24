@@ -1,0 +1,351 @@
+#!/bin/bash
+
+#shopt -s nocasematch
+shopt -s extglob
+set -u
+
+# shellcheck disable=SC2086
+: ${BUTT_DATAPATH:=.}
+# shellcheck disable=SC2086
+: ${BUTT_OPTIONS:=}
+: ${COLUMNS:=$(tput cols)}
+: ${LINES:=$(tput lines)}
+
+function main {
+
+  function validate_nubmer {
+    [[ $1 =~ ^[1-9][0-9]*$ ]] \
+      || err "'$1' is not a valid positive number"
+  }
+
+  function msg_start {
+    stdout_verbose
+    echo -n "$1 ..."
+    stdout_silent
+  }
+
+  function msg_end {
+    stdout_verbose
+    echo -e " $1"
+    stdout_silent
+  }
+
+  function stdout_silent {
+    [[ $verbose == 0 ]] && exec 5<&1 && exec 1>/dev/null
+    return 0
+  }
+
+  function stdout_verbose {
+    [[ $verbose == 0 ]] && exec 1<&5
+    return 0
+  }
+
+  function err {
+    echo "$(basename "${0}")[error]: $*" >&2
+    return 1
+  }
+
+  function setcolor {
+    local c
+    c=${1:-always}
+    case $c in
+      always|never|auto)
+        color=$c
+        return 0
+      ;;
+    esac
+    return 2
+  }
+
+  function success {
+    colorize "$*" "$GREEN"
+  }
+
+  function fail {
+    colorize "$*" "$RED"
+  }
+
+  function info {
+    colorize "$*" "$BLUE"
+  }
+
+  function stdoutpipe {
+    readlink /proc/$$/fd/1 | grep -q "^pipe:"
+  }
+
+  function colorize {
+    [[ $color == never ]] && echo -n "$1" && return
+    [[ $color == auto ]] && stdoutpipe && echo -n "$1" && return
+    local c
+    c="${2:-$GREEN}"
+    tput setaf "$c"
+    echo -n "$1"
+    tput sgr0
+  }
+
+  function clear_stdin {
+    while read -r -t 0; do read -r; done
+  }
+
+  function save_cursor_position {
+    local curpos oldstty
+    curpos="1;1"
+    exec < /dev/tty
+    oldstty=$(stty -g)
+    stty raw -echo min 0
+    echo -en "\033[6n" >/dev/tty
+    # shellcheck disable=SC2162
+    read -d"R" curpos </dev/tty
+    stty "$oldstty"
+    pos_x=$( echo "${curpos#??}" | cut -d";" -f1 )
+    pos_y=$( echo "${curpos#??}" | cut -d";" -f2 )
+  }
+
+
+  function set_cursor_position {
+    [[ "$pos_x" == "$LINES" ]] && : $(( pos_x-- ))
+    tput cup $(( pos_x-1 )) $(( pos_y-1 ))
+  }
+
+  function confirm {
+    if [[ $is_stdin == 0 ]]; then
+      stdout_verbose
+      echo -n "${1:-"Are you sure?"} [YES/No] "
+      save_cursor_position
+      clear_stdin
+      read -r
+      [[ -z "$REPLY" ]] && set_cursor_position && echo "yes"
+      stdout_silent
+    else
+      read -r
+    fi
+    [[ "$REPLY" =~ ^y(es)?$ || -z "$REPLY" ]] && return 0
+    [[ "$REPLY" =~ ^no?$ ]] && return 1
+    confirm "Type"
+  }
+
+  function usage {
+    local usage_file shift_left first_line other_content
+    if [[ -z "${BUTT_USAGE+x}" ]]; then
+      usage_file="$BUTT_DATAPATH/${script_name}.usage"
+      [ -f "$usage_file" ] \
+        || err "Usage file not found" \
+        || return 1
+      first_line="$(head -n1 "$usage_file")"
+      other_content="$(tail -n+2 "$usage_file")"
+    else
+      first_line="$(echo "$BUTT_USAGE" | head -n1)"
+      other_content="$(echo "$BUTT_USAGE" | tail -n+2)"
+    fi
+    echo "$first_line"
+    echo
+    shift_left=0
+    # shellcheck disable=SC2004
+    [[ $COLUMNS -gt 1 ]] && shift_left=5 && export MANWIDTH=$((COLUMNS+$shift_left))
+    # shellcheck disable=SC2005
+    echo "$other_content" | man --nj --nh -l - | sed "1,2d;/^[[:space:]]*$/d;\$d;s/^ \{$shift_left\}//"
+  }
+
+  function version {
+    local ver prefix
+    prefix="GNU butt "
+    [[ -n "${BUTT_VERSION+x}" ]] \
+      && echo "$prefix$BUTT_VERSION" \
+      && return
+    ver="$BUTT_DATAPATH/VERSION"
+    [ -f "$ver" ] \
+      || err "Version file not found" \
+      || return 1
+    echo -n "$prefix"
+    cat "$ver"
+  }
+
+  function msg_end_status {
+    local status
+    status="${1-}"
+    # shellcheck disable=SC2015
+    [ "$status" -eq 0 ] \
+      && msg_end "$DONE" \
+      || msg_end "$FAILED"
+  }
+
+  function validate {
+    [ ${#@} -eq 1 ] \
+      || err "Invalid number of arguments" \
+      || { usage; return 2; }
+    [ -f "$curdir/$1" ] \
+      || err "File '$curdir/$1' not found" \
+      || return 1
+  }
+
+  function status {
+    [[ "$verbose" -eq 1 && ! $1 -eq 0 ]] \
+      && diag "$(fail "${FUNCNAME[1]}")" \
+      && diag "  saw: $2" \
+      && diag "  not: $3"
+    [[ $1 -eq 0 ]] || : $((local_fails++))
+  }
+
+  function assert_equal {
+    [[ "${1-}" == "${2-}" ]]
+    status $? "${1-}" "${2-}"
+  }
+
+  function assert_startwith {
+    [[ "${1-}" == "${2-}"* ]]
+    status $? "${1-}" "${2-}"
+  }
+
+  function assert_contains {
+    echo "${1-}" | grep -qF "${2-}"
+    status $? "${1-}" "${2-}"
+  }
+
+  function debug {
+    local cmd
+    cmd="${*-}"
+    local stdoutfile stderrfile
+    stdoutfile="$(mktemp)"
+    stderrfile="$(mktemp)"
+    eval "$cmd" > "$stdoutfile" 2>"$stderrfile"
+    status=$?\
+    stdout="$(< "$stdoutfile")"
+    stderr="$(< "$stderrfile")"
+    if [[ "$1" == "before" || "$1" == "after" ]]; then
+      [[ -n "$stdout" ]] && echo "$stdout"
+      # shellcheck disable=SC2005
+      [[ -n "$stderr" ]] && echo "$(colorize "$stderr" "$RED")"
+    fi
+    outlines=()
+    errlines=()
+    # shellcheck disable=SC2034
+    [[ -z "$stdout" ]] || IFS=$'\n' read -d '' -r -a outlines <<< "$stdout"
+    # shellcheck disable=SC2034
+    [[ -z "$stderr" ]] || IFS=$'\n' read -d '' -r -a errlines <<< "$stderr"
+    return 0
+  }
+
+  # shellcheck disable=SC1083
+  function start {
+    name="$*"
+    local_fails=0
+    # shellcheck disable=SC2154
+    [[ "$limit" -gt 0 && "$((test_runs+1))" -gt "$limit" ]] && return 3 # end testing
+    : $((tests++))
+    [[ "$skip" -gt 0 && "$((tests-1))" -lt "$skip" ]] \
+      && skip "$name" \
+      && return 4 # skip test
+    : $((test_runs++))
+  }
+
+  # shellcheck disable=SC1083
+  function end {
+    [[ "$local_fails" -eq 0 ]] || : $((test_fails++))
+    local s
+    [ "$local_fails" -eq 0 ] \
+      && s="true" \
+      || s="false"
+    ok "$name" "$s"
+  }
+
+  function process {
+    echo "trap 'case \$? in 3) return 0;; 4) : ;; *) bail \"$1 failed on line \$((\$LINENO-1))\"; return 1;; esac' ERR" > "$working_file"
+    cat "$curdir/$1" >> "$working_file"
+    local -i num_tests
+    num_tests=$(grep -c "^\s*start \"" "$working_file")
+    sed -i 's/^\s*start \(.*\)$/if start \1; then/g' "$working_file"
+    sed -i 's/end/end; fi/g' "$working_file"
+    plan_lazy "$num_tests"
+    # shellcheck disable=SC1090
+    source "$working_file"
+    trap - ERR
+  }
+
+  local line script_name pos_x pos_y is_stdin status tests local_fails test_fails test_runs working_dir working_file clean curdir limit skip name
+  # shellcheck disable=SC2034
+  local stdout stderr outlines errlines
+
+  script_name="butt"
+  color=auto
+  pos_x=1
+  pos_y=1
+  tests=0
+  test_fails=0
+  test_runs=0
+  local_fails=0
+  curdir="$(pwd)"
+  [ -t 0 ]
+  is_stdin=$?
+  name=
+
+  # process options
+  # shellcheck disable=SC2086
+  # shellcheck disable=SC2048
+  if ! line=$(
+    IFS=" " getopt -n "$0" \
+           -o hl:s:vVw:\? \
+           -l color::,colour::,help,limit:,skip:,verbose,version,working-dir: \
+           -- $BUTT_OPTIONS $*
+  )
+  then usage; return 2; fi
+  eval set -- "$line"
+
+  # load user options
+  verbose=0
+  working_dir=
+  clean=1
+  limit=0
+  skip=0
+  while [ $# -gt 0 ]; do
+    case $1 in
+      --color|--colour) shift; setcolor "$1" || { usage; return 2; }; shift ;;
+      -h|-\?|--help) usage; return $? ;;
+      -l|--limit) shift; validate_nubmer "$1" || return 1; limit="$1"; shift;;
+      -s|--skip) shift; validate_nubmer "$1" || return 1; skip="$1"; shift;;
+      -v|--verbose) verbose=1; shift ;;
+      -V|--version) version; return $? ;;
+      -w|--working-dir) shift; working_dir="$1"; clean=0; shift ;;
+      --) shift; break ;;
+      *-) err "Unrecognized option '$1'"; usage; return 2 ;;
+      *) break ;;
+    esac
+  done
+
+  # silent if not verbose
+  [ $verbose -eq 0 ] && stdout_silent
+
+  # working dir is random tmp iff not set
+  [[ -z "$working_dir" ]] && working_dir="$(mktemp -d)"
+  cd "$working_dir" 2>/dev/null \
+    || err "Unable to change directory to '$working_dir'" \
+    || return 1
+
+  # modified test file
+  working_file="$(mktemp)"
+
+  # cleanup iff terminate or exit
+  # shellcheck disable=SC2064
+  trap "[[ \"$clean\" -eq 1 ]] && rm -rf \"$working_dir\"; [ -d \"\"$working_file\"\" ] && rm \"$working_file\"; exit;" INT TERM EXIT
+
+  # constants
+  local RED=1 GREEN=2 BLUE=4
+
+  # shellcheck disable=SC2034
+  local -r \
+    DONE="$(success "ok")" \
+    FAILED="$(fail "fail")" \
+    SKIPPED="$(info "skip")"
+
+  # source tap lib
+  [[ "$BUTT_DATAPATH" == "." ]] && BUTT_DATAPATH="$curdir/${BASH_SOURCE%/*}"
+  # shellcheck source=libtap.sh
+  # shellcheck disable=SC1091
+  source "$BUTT_DATAPATH/libtap.sh" #replaceline# libtap.sh
+
+  # run butt
+  # shellcheck disable=SC2154
+  validate "$@" && process "$@" && [[ $failed -eq 0 ]] || return $?
+
+}
+
+main "$@"
