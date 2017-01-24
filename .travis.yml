@@ -39,21 +39,21 @@ script:
   - shellcheck butt
   - butt -w test test/test.butt
 
-# Extract text from CHANGELOG between first and second subheading
-before_deploy:
-  - RELEASE_MSG="$(awk 'BEFORE{out=0} /^## /{if(out==0){out=1; next} else {out="end"}} out==1{print}' CHANGELOG.md)"
-
 deploy:
-  provider: releases
-  api_key:
-    secure: AGRRNLdQ2qql6TivXTWUdyrSd3lgWywL6733A/GmVG0vbh20dkd8Sr+ZxB/3JRXAQeSKG4BtJiqW26c0daR79oHeNXV2Ei56xkwYC0ovaD1VMwsfEjKsecDE13GLhzsecoPgfl1asAsakJFdekY1ypM0yKVLaXPS9lttOxT8Yft3hnhg4LLJ/+G4Yqg1QFIGIGoc4xPtVtd9KpXzjVORrpIv71r18q3mF+JlICieaBMW/fZqUAhjLBjCAe8IqYKS9YhLpokb3Yf933pAEA0KUu9AdLn3F/XpzYHJVqmRdCP5RON5JBlFRL7hv7ObCda6bHZxstOIUHTjpI4Vyhl3i2Hc0BhygKSw+gvcyyq4U0I84DpDfNra7EcrMKXIW5Ny6E3xNLQSaYYJX/mojEpSUv0r3U89BH8Tk6xD3WT9jwqV5vAXDCTakdNjfEAsllbdG8JPXuu7cF4IFwi6rSPwV+RYqiERyaaJ/KnkyiY61j1ErLXjrQPQ0e6+fD9wrUXLLCsAa+zhK7aWcG3XgxQe2WvjQN+Cxt3CQIyp5IbzSkcOmt6/My30rR2SXkcYLP7X5y8qihK+9+b6a9M/y2cWj324UV0lcizFPxdb29ZctN2tmFsPfnfWgQ7g7d5XQYOeZABZ8tM1YgJMdarmudxVnZG5qIMEUulWVM8Aer4SfZA=
-  file: "$DEPLOY_FILE"
-  skip_cleanup: true
-  file_glob: true
-  body: "$RELEASE_MSG"
-  on:
-    repo: InternetGuru/butt
-    branch: master
+  - provider: releases
+    api_key: "$GITHUB_TOKEN"
+    file: "$DEPLOY_FILE"
+    skip_cleanup: true
+    file_glob: true
+    on:
+      repo: InternetGuru/butt
+      tags: true
+  - deploy:
+    provider: script
+    script: "scripts/changelog-latest CHANGELOG.md | scripts/travis-update-release"
+    on:
+      repo: InternetGuru/butt
+      tags: true
 
 matrix:
   fast_finish: true

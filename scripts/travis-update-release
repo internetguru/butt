@@ -1,0 +1,31 @@
+#!/usr/bin/env ruby
+require "octokit"
+
+gh_token = ENV.fetch("GITHUB_TOKEN")
+gh_slug = ENV.fetch("TRAVIS_REPO_SLUG")
+release_tag = ENV.fetch("TRAVIS_TAG")
+release_desc = STDIN.tty? ? '' : $stdin.read
+
+puts "Updating release details for #{gh_slug}, tag #{release_tag}"
+
+client = Octokit::Client.new(:access_token => gh_token)
+
+release = client.release_for_tag(gh_slug, release_tag)
+unless release
+  puts "Release not found, creating draft"
+  release = client.create_release(gh_slug, release_tag, {:draft => true})
+end
+
+release_url = release.rels[:self].href
+puts "Release URL: #{release_url}"
+
+release_attributes = {
+  :name => release_tag,
+  :body => release_desc,
+  :draft => false,
+  :prerelease => false,
+}
+puts "Setting attributes:"
+p release_attributes
+
+client.update_release(release_url, release_attributes)
