@@ -11,8 +11,11 @@ addons:
     - shellcheck
 
 env:
-  - DIST=regular DEPLOY_FILE=butt-*.tar.gz
-  - DIST=single DEPLOY_FILE=butt.sh
+  global:
+    - secure: "IzaKWe8IvA2KcLb1G+AnisFMNNIShHtNQ5Yn7VqPkWd5XgwSs76PROpcLHtCv0/o4PcqRFb0JYLKfyTsK0dhkKHgefNW0Da1R52QnR3+dWNUmYHCyZ2qkkjS6Kt9Tit1pJNB+9dlMICJIUdCUgRKfiV/yVjlCaa34J5pyZqi7mP7i+MtrieAlU2gE8lbGQGuFMJvofCdNCmseVEK3BhBSr7HhkDvA/sZtRWCQc9Qn0RnYxyIt0HQNnQjPfqZ8cCWXFo/EC6Ayq0ZdcWQAG/FiIjXxPR4UfDqdkDEGTJ87LE4i+37Q2FxGSb/gxHtWzUBTwyqEmDlcpmVxeV3wsNJ6x8JoVKLX04l795LSmiMZ1K0nwUbh+NbivhZutXACJi9IZzfXCAzAeJCoWmbsLrvx75qJ4l7yRXuflKxD0vtMTsEdqGrOe9NwvIEhbTq06NjTazRDjOLVHbKZmPdx7LqMHfA2YiP5tNzHhuV1q6ty0hZ2hRRbkovOl7PIXEae0XCLLiahYyhV5MgNBlq3nuP3SosKHILTWeUMqAXPmFs8U/8cr5CABEzxwKOOPZBUdGc1iylj+tR6rnJ+F/96ZvpV74Vwt1/9PqE45nVgIX3sjO6iQPCmq3zSWNtyT4F8fCcMFYBnNDoyTxD9i4XMiAf/xgYf2bMs0wYk57XopdUAK8="
+  matrix:
+    - DIST=regular DEPLOY_FILE=butt-*.tar.gz
+    - DIST=single DEPLOY_FILE=butt.sh
 
 before_install:
   - export PREFIX=$HOME/opt
