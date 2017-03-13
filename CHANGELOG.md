@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
  - Add [EditorConfig](http://editorconfig.org/) file to enforce standard formatting
 
+### Changed
+ - Makefile uses BINDIR instead of EXEC_PREFIX
+
 ## [0.2.0] - 2017-01-30
 ### Fixed
  - automatic GitHub release notes
