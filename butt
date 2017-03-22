@@ -170,7 +170,7 @@ function main {
   }
 
   function validate {
-    [ ${#@} -eq 1 ] \
+    [ $# -eq 1 ] \
       || err "Invalid number of arguments" \
       || { usage; return 2; }
     [ -f "$curdir/$1" ] \
