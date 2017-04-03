@@ -288,6 +288,7 @@ function main {
            -- $BUTT_OPTIONS $*
   )
   then usage; return 2; fi
+
   eval set -- "$line"
 
   # load user options
