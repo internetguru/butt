@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [0.3.0] - 2017-04-03
 ### Added
  - Basic macOS support; for known issues see #13
- - Add [EditorConfig](http://editorconfig.org/) file to enforce standard formatting
+ - [EditorConfig](http://editorconfig.org/) file to enforce standard formatting
 
 ### Changed
  - Makefile uses BINDIR instead of EXEC_PREFIX
