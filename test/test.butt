@@ -40,7 +40,6 @@ end
 start "--skip=1 skips the first test"
   debug 'butt --color=never -s1 cases/pass.butt'
   assert_equal "$status" 0
-  echo "stdout: $stdout"
   assert_equal "${outlines[0]}" "ok 1 # skip empty is ok"
   assert_equal "${outlines[1]}" "ok 2 - true"
   assert_equal "${outlines[7]}" "1..7"
