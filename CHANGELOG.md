@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 ### Added
+ - Basic OS X support; known issue #13
  - Add [EditorConfig](http://editorconfig.org/) file to enforce standard formatting
 
 ### Changed
