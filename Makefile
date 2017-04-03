@@ -8,14 +8,15 @@ destdir      :=
 system       := linux
 # Fallback to defaults but allow to get the values from environment.
 PREFIX       ?= $(prefix)
-EXEC_PREFIX  ?= $(PREFIX)
+BINDIR       ?= $(PREFIX)/bin
 DESTDIR      ?= $(destdir)
 SYSTEM       ?= $(system)
 
 #-------------------------------------------------------------------------------
-# Installation paths
+# Installation paths and defaults
 #-------------------------------------------------------------------------------
 
+SHELL       := /bin/bash
 DIRNAME     := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 RST2MAN     := rst2man
 PROG        := butt
@@ -30,7 +31,7 @@ VERFILE     := VERSION
 CHLOGFILE   := CHANGELOG.md
 TAPLIB      := libtap.sh
 DESTPATH    := $(DESTDIR)$(PREFIX)
-BINPATH     := $(DESTDIR)$(EXEC_PREFIX)/bin
+BINPATH     := $(DESTDIR)$(BINDIR)
 SHAREPATH   := $(DESTPATH)/share
 MANDIR      := man/man1
 DISTNAME    := $(PROG)-$$(cat $(VERFILE))-$(SYSTEM)
