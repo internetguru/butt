@@ -253,8 +253,8 @@ function main {
     cat "$curdir/$1" >> "$working_file"
     local -i num_tests
     num_tests=$(grep -c "^\s*start \"" "$working_file")
-    sed -i 's/^\s*start \(.*\)$/if start \1; then/g' "$working_file"
-    sed -i 's/end/end; fi/g' "$working_file"
+    sed -i '' 's/^\s*start \(.*\)$/if start \1; then/g' "$working_file"
+    sed -i '' 's/end/end; fi/g' "$working_file"
     plan_lazy "$num_tests"
     # shellcheck disable=SC1090
     source "$working_file"
