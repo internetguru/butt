@@ -27,8 +27,9 @@ before_install:
     if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
       brew update
       brew unlink coreutils
-      brew install shellcheck docutils gnu-getopt coreutils gawk
+      brew install shellcheck docutils gnu-getopt coreutils gnu-sed
       export PATH="/usr/local/opt/gnu-getopt/bin:$PATH"
+      export PATH="/usr/local/opt/gnu-sed/bin:$PATH"
       export PATH="/usr/local/opt/coreutils/libexec/gnubin:$PATH"
       ln -s /usr/local/bin/rst2man.py /usr/local/bin/rst2man
     fi
