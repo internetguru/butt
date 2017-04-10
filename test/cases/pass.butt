@@ -40,5 +40,6 @@ start "assert_contains"
   assert_contains "abc\ndef" "c\nd"
   assert_contains "ěščřžýáíéúů" "ž"
   assert_contains "ěščřžýáíéúů" "řžý"
+  assert_contains "--abcd" "--"
 end
 #######################################
