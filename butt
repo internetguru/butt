@@ -197,7 +197,7 @@ function main {
   }
 
   function assert_contains {
-    echo "${1-}" | grep -qF "${2-}"
+    echo "${1-}" | grep -qF -- "${2-}"
     status $? "${1-}" "${2-}"
   }
 
