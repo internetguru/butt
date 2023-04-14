@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [Unreleased]
+
 ## [0.3.1] - 2017-04-10
 ### Fixed
  - Fix assert_contains - do not process given parameters
@@ -31,6 +33,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
  - continuous integration selftesting
 
 
+[Unreleased]: https://github.com/internetguru/butt/compare/v0.3.1...dev
 [0.3.1]: https://github.com/InternetGuru/butt/compare/v0.3.0...v0.3.1
 [0.3.1]: https://github.com/petrzpav/butt/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/petrzpav/butt/compare/v0.2.1...v0.3.0
