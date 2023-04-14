@@ -3,25 +3,25 @@ NAME
 
 Bash Unit Testing Tool
 
+
 SYNOPSIS
 ========
 
 butt [-hlsvVw] [--color[=WHEN]] FILE
 
+
 DESCRIPTION
 ===========
 
-**Bash Unit Testing Tool**\ [1] (hereinafter referred as the 'BUTT') runs and
-evaluates a set of commands according to expected results. It can serve as CI
-component of Bash scrip development.
+**Bash Unit Testing Tool** runs and evaluates a set of commands according to expected results. It can serve as a CI testing component of Bash scrip development.
 
-It is an alternative to **bats**\ [2] command with following
-improvements:
+The 'butt' command is an alternative to the 'bats' command, offering the following improvements:
 
-- predefined comparison (assert) functions,
-- distinguish standard and error output,
-- verbose mode,
-- advanced user functions support.
+- Predefined comparison (assert) functions
+- Distinguish standard and error output
+- Verbose mode
+- Advanced user functions
+
 
 OPTIONS
 =======
@@ -42,19 +42,20 @@ OPTIONS
 \-w PATH, --working-dir=PATH
     Run tests in specific PATH (and do not remove it).
 
-INSTALL
-=======
 
-From dist package
------------------
+INSTALLATION
+============
+
+From a dist package
+-------------------
 
 ``./install``, resp. ``./uninstall``
 
 Tip: Specify destination directories
     E.g. ``MANPATH=/usr/share/man/man1 ./install``
 
-From source
------------
+From the source
+---------------
 
 ``./configure && make && compiled/install``
 
@@ -66,16 +67,18 @@ Tip: Install rst2man
     ``apt-get install python-docutils`` or
     ``pip install docutils``
 
+
 HISTORY
 =======
 
 Actual version
-    see file VERSION
-Actual change log
-    see file CHANGELOG
+    see the VERSION file
+Actual changes
+    see the CHANGELOG file
 
-EXIT STATUS
-===========
+
+EXIT CODES
+==========
 
 0
     No problems occurred.
@@ -84,67 +87,50 @@ EXIT STATUS
 2
     Parse or invalid option error.
 
-SEE ALSO
-========
 
-`BUTT[1] <https://github.com/InternetGuru/butt/>`__
+REPOSITORY
+==========
 
-`Bats[2] <https://github.com/sstephenson/bats>`__
+`Bash Unit Testing Tool <https://github.com/internetguru/butt/>`__
+
 
 REPORTING BUGS
 ==============
 
-`Issue tracker <https://github.com/InternetGuru/butt/issues>`__
+`Issue tracker <https://github.com/internetguru/butt/issues>`__
+
+
+AUTHOR
+======
+
+Written by Pavel Petrzela and George J. Pavelka.
+
 
 COPYRIGHT
 =========
 
-Copyright (C) 2016 `InternetGuru <https://www.internetguru.cz>`__
+Copyright © 2016 `Internet Guru <https://www.internetguru.io>`__
 
-`License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>`__
+`License GPLv3+: GNU GPL version 3 or later <https://www.gnu.org/licenses/gpl-3.0.html>`__
 
 This is free software: you are free to change and redistribute it.
 
 There is NO WARRANTY, to the extent permitted by law.
 
+
 DONATION
 ========
 
-If you find this program useful, please **send a donation** to its developers
-to support their work. If you use this program at your workplace, please
-suggest that the company make a donation. We appreciate contributions of any
-size. Donations enable us to spend more time working on this package, and help
-cover our infrastructure expenses.
+If you find this script useful, please consider making a donation to support its developers. We appreciate any contributions, no matter how small. Donations help us to dedicate more time and resources to this project, including covering our infrastructure expenses.
 
-If you’d like to make a donation of any value, please send it to the following
-PayPal address:
+`PayPal Donation <https://www.paypal.com/donate/?hosted_button_id=QC7HU967R4PHC>`__
 
-`PayPal Donation <https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=UZHQ28P4VYHWY>`__
+Please note that we are not a tax-exempt organization and cannot provide tax deductions for your donation. However, for donations exceeding $500, we would like to acknowledge your contribution on project's page and in this file (including the man page).
 
-Since we aren’t a tax-exempt organization, we can’t offer you a tax deduction.
-But for all donations over 50 USD, we’d be happy to recognize your
-contribution on the **BUTT** page[1] and on this README file (including manual
-page) for the next release.
+Thank you for your continued support!
 
-We are also happy to consider making particular improvements or changes, or
-giving specific technical assistance, in return for a substantial donation
-over 100 USD. If you would like to discuss this possibility, write us at
-info@internetguru.cz.
 
-Another possibility is to pay a software maintenance fee. Again, write us
-about this at info@internetguru.cz to discuss how much you want to pay and how
-much maintenance we can offer in return.
+HONORED DONORS
+==============
 
-Thanks for your support!
-
-DONORS
-======
-
-`Faculty of Information Technology, CTU Prague <https://www.fit.cvut.cz/en>`__
-
-AUTHORS
-=======
-
--  Pavel Petržela pavel.petrzela@internetguru.cz
-
--  Jiří Pavelka jiri.pavelka@internetguru.cz
+`Czech Technical University in Prague <https://www.fit.cvut.cz/en>`__
